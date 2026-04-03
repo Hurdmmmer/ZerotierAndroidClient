@@ -768,14 +768,9 @@ public class NetworkListFragment extends Fragment {
      */
     private void stopService() {
         this.monitorOnlyModeActive = false;
-        if (this.mBoundService != null) {
-            this.mBoundService.stopZeroTier();
-        }
-        var intent = new Intent(requireActivity(), ZeroTierOneService.class);
+        // 统一断开入口：只发送 StopEvent，由 Service 事件处理器执行内核停机与自停。
+        // 避免 UI 侧重复调用 stopZeroTier/stopService 导致多次 stop。
         this.eventBus.post(new StopEvent());
-        if (!requireActivity().stopService(intent)) {
-            Log.e(TAG, "stopService() returned false");
-        }
         doUnbindService();
     }
 
@@ -849,9 +844,6 @@ public class NetworkListFragment extends Fragment {
                 if (switchingAnotherNetwork) {
                     Log.i(TAG, TRACE + " switching network oldNwid=" + Long.toHexString(connectedNetworkId)
                             + " newNwid=" + Long.toHexString(selectedNetwork.getNetworkId()));
-                    if (this.mBoundService != null) {
-                        this.mBoundService.leaveNetwork(connectedNetworkId);
-                    }
                     stopService();
                     this.viewModel.doChangeConnectNetwork(null);
                 }
@@ -887,10 +879,6 @@ public class NetworkListFragment extends Fragment {
             // 关闭网络
             Log.i(TAG, TRACE + " switchOff nwid=" + Long.toHexString(selectedNetwork.getNetworkId()));
             Log.d(TAG, "Leaving Leaving Network: " + selectedNetwork.getNetworkIdStr());
-            if (this.isBound() && this.mBoundService != null) {
-                this.mBoundService.leaveNetwork(selectedNetwork.getNetworkId());
-                this.doUnbindService();
-            }
             this.stopService();
             this.viewModel.doChangeConnectNetwork(null);
             requireActivity().runOnUiThread(this::updateNetworkListAndNotify);

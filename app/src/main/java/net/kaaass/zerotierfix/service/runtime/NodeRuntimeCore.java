@@ -25,7 +25,7 @@ import java.net.InetSocketAddress;
  * 3) Node 级操作（join/leave/config/peers）。
  * Service 仅负责生命周期与事件编排，不直接散落 Node API 调用细节。
  */
-public class ZeroTierRuntimeController {
+public class NodeRuntimeCore {
 
     /**
      * Socket 保护器（由 VpnService.protect 适配）。
@@ -214,10 +214,6 @@ public class ZeroTierRuntimeController {
         public final Thread udpThread;
         /** 当前后台任务线程。 */
         public final Thread vpnThread;
-        /** IPv4 多播扫描线程。 */
-        public final Thread v4MulticastScanner;
-        /** IPv6 多播扫描线程。 */
-        public final Thread v6MulticastScanner;
         /** VPN 文件描述符包装对象。 */
         public final android.os.ParcelFileDescriptor vpnSocket;
         /** VPN 输入流。 */
@@ -235,8 +231,6 @@ public class ZeroTierRuntimeController {
          * @param tunTapAdapter     TUN/TAP 适配器
          * @param udpThread         UDP 线程
          * @param vpnThread         后台线程
-         * @param v4MulticastScanner IPv4 多播线程
-         * @param v6MulticastScanner IPv6 多播线程
          * @param vpnSocket         VPN FD
          * @param in                VPN 输入流
          * @param out               VPN 输出流
@@ -247,8 +241,6 @@ public class ZeroTierRuntimeController {
                                   TunTapAdapter tunTapAdapter,
                                   Thread udpThread,
                                   Thread vpnThread,
-                                  Thread v4MulticastScanner,
-                                  Thread v6MulticastScanner,
                                   android.os.ParcelFileDescriptor vpnSocket,
                                   FileInputStream in,
                                   FileOutputStream out,
@@ -258,8 +250,6 @@ public class ZeroTierRuntimeController {
             this.tunTapAdapter = tunTapAdapter;
             this.udpThread = udpThread;
             this.vpnThread = vpnThread;
-            this.v4MulticastScanner = v4MulticastScanner;
-            this.v6MulticastScanner = v6MulticastScanner;
             this.vpnSocket = vpnSocket;
             this.in = in;
             this.out = out;
@@ -273,22 +263,14 @@ public class ZeroTierRuntimeController {
     public static final class StopRuntimeResult {
         /** Node 是否已被 close。 */
         public final boolean nodeClosed;
-        /** 停止后的 IPv4 多播线程引用（当前固定为 null）。 */
-        public final Thread v4ScannerStopped;
-        /** 停止后的 IPv6 多播线程引用（当前固定为 null）。 */
-        public final Thread v6ScannerStopped;
 
         /**
          * 构造 Runtime 停止结果。
          *
          * @param nodeClosed       Node 是否已关闭
-         * @param v4ScannerStopped 停止后的 IPv4 多播线程引用（固定为 null）
-         * @param v6ScannerStopped 停止后的 IPv6 多播线程引用（固定为 null）
          */
-        public StopRuntimeResult(boolean nodeClosed, Thread v4ScannerStopped, Thread v6ScannerStopped) {
+        public StopRuntimeResult(boolean nodeClosed) {
             this.nodeClosed = nodeClosed;
-            this.v4ScannerStopped = v4ScannerStopped;
-            this.v6ScannerStopped = v6ScannerStopped;
         }
     }
 
@@ -399,20 +381,6 @@ public class ZeroTierRuntimeController {
             } catch (InterruptedException ignored) {
             }
         }
-        if (request.v4MulticastScanner != null) {
-            request.v4MulticastScanner.interrupt();
-            try {
-                request.v4MulticastScanner.join();
-            } catch (InterruptedException ignored) {
-            }
-        }
-        if (request.v6MulticastScanner != null) {
-            request.v6MulticastScanner.interrupt();
-            try {
-                request.v6MulticastScanner.join();
-            } catch (InterruptedException ignored) {
-            }
-        }
         if (request.vpnSocket != null) {
             try {
                 request.vpnSocket.close();
@@ -436,7 +404,7 @@ public class ZeroTierRuntimeController {
             request.node.close();
             nodeClosed = true;
         }
-        return new StopRuntimeResult(nodeClosed, null, null);
+        return new StopRuntimeResult(nodeClosed);
     }
 
     /**
@@ -546,3 +514,4 @@ public class ZeroTierRuntimeController {
         return node.peers();
     }
 }
+

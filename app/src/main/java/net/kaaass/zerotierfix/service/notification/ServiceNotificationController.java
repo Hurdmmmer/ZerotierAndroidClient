@@ -76,9 +76,11 @@ public class ServiceNotificationController {
     }
 
     /**
-     * 确保通知管理器和渠道就绪。
+     * 初始化通知系统（管理器与渠道）。
+     * <p>
+     * 该方法设计为在 Service 启动阶段调用一次。
      */
-    public void ensureReady() {
+    public void initNotification() {
         if (this.notificationManager == null) {
             this.notificationManager = (NotificationManager) this.context.getSystemService(Context.NOTIFICATION_SERVICE);
         }
@@ -93,7 +95,7 @@ public class ServiceNotificationController {
     }
 
     /**
-     * 构建“已连接”通知。
+     * 构建“已连接”通知。再通知面板中显示
      *
      * @return 通知对象
      */
