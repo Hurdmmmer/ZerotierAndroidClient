@@ -1,22 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory android:title="@string/preferences_general">
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:iconSpaceReserved="false"
+            android:key="general_start_zerotier_on_boot"
+            android:summary="@string/preferences_general_start_on_boot_summary"
+            android:title="@string/preferences_general_start_on_boot" />
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="@string/planet_settings">
-        <SwitchPreference
+        <!-- 是否启用自定义 Planet 文件 -->
+        <SwitchPreferenceCompat
             android:defaultValue="false"
+            android:iconSpaceReserved="false"
             android:key="planet_use_custom"
             android:summary="@string/planet_use_custom_summary"
             android:title="@string/use_custom_planet" />
+        <!-- 选择 Planet 文件来源（本地文件 / URL） -->
         <Preference
+            android:iconSpaceReserved="false"
             android:key="set_planet_file"
             android:title="@string/set_planet_file" />
+        <!-- 自动路由探测：根据内网探测 IP 自动决定是否启用 ZeroTier 路由 -->
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:iconSpaceReserved="false"
+            android:key="planet_auto_route_check"
+            android:summary="@string/planet_auto_route_check_summary"
+            android:title="@string/planet_auto_route_check" />
+        <!-- 内网探测 IP：留空则不执行自动路由探测 -->
+        <EditTextPreference
+            android:defaultValue=""
+            android:iconSpaceReserved="false"
+            android:key="planet_intranet_probe_ip"
+            android:summary="@string/planet_intranet_probe_ip_summary"
+            android:title="@string/planet_intranet_probe_ip"
+            app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/preferences_network">
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
+            android:iconSpaceReserved="false"
             android:key="network_use_cellular_data"
             android:title="@string/preferences_network_use_cell_data" />
-        <CheckBoxPreference
+        <SwitchPreferenceCompat
             android:defaultValue="false"
+            android:iconSpaceReserved="false"
             android:key="network_disable_ipv6"
             android:summary="@string/preferences_network_disable_ipv6_summary"
             android:title="@string/preferences_network_disable_ipv6" />

@@ -11,11 +11,10 @@ import android.net.ConnectivityManager;
 import android.net.VpnService;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,34 +26,43 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.content.res.AppCompatResources;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.appbar.MaterialToolbar;
+import com.zerotier.sdk.Node;
 import com.zerotier.sdk.NodeStatus;
+import com.zerotier.sdk.Peer;
+import com.zerotier.sdk.PeerPhysicalPath;
 import com.zerotier.sdk.Version;
 
 import net.kaaass.zerotierfix.BuildConfig;
 import net.kaaass.zerotierfix.R;
 import net.kaaass.zerotierfix.ZerotierFixApplication;
 import net.kaaass.zerotierfix.events.AfterJoinNetworkEvent;
+import net.kaaass.zerotierfix.events.IntranetCheckStateEvent;
 import net.kaaass.zerotierfix.events.IsServiceRunningReplyEvent;
 import net.kaaass.zerotierfix.events.IsServiceRunningRequestEvent;
 import net.kaaass.zerotierfix.events.NetworkListCheckedChangeEvent;
 import net.kaaass.zerotierfix.events.NetworkListReplyEvent;
 import net.kaaass.zerotierfix.events.NetworkListRequestEvent;
 import net.kaaass.zerotierfix.events.NodeDestroyedEvent;
-import net.kaaass.zerotierfix.events.NodeIDEvent;
 import net.kaaass.zerotierfix.events.NodeStatusEvent;
 import net.kaaass.zerotierfix.events.NodeStatusRequestEvent;
 import net.kaaass.zerotierfix.events.OrbitMoonEvent;
+import net.kaaass.zerotierfix.events.PeerInfoReplyEvent;
+import net.kaaass.zerotierfix.events.PeerInfoRequestEvent;
 import net.kaaass.zerotierfix.events.StopEvent;
 import net.kaaass.zerotierfix.events.VPNErrorEvent;
 import net.kaaass.zerotierfix.events.VirtualNetworkConfigChangedEvent;
-import net.kaaass.zerotierfix.model.AppNode;
 import net.kaaass.zerotierfix.model.AssignedAddress;
 import net.kaaass.zerotierfix.model.AssignedAddressDao;
 import net.kaaass.zerotierfix.model.DaoSession;
@@ -67,6 +75,7 @@ import net.kaaass.zerotierfix.model.type.NetworkStatus;
 import net.kaaass.zerotierfix.service.ZeroTierOneService;
 import net.kaaass.zerotierfix.ui.view.NetworkDetailActivity;
 import net.kaaass.zerotierfix.ui.viewmodel.NetworkListModel;
+import net.kaaass.zerotierfix.util.AutoConnectPolicy;
 import net.kaaass.zerotierfix.util.Constants;
 import net.kaaass.zerotierfix.util.DatabaseUtils;
 import net.kaaass.zerotierfix.util.StringUtils;
@@ -84,6 +93,7 @@ import lombok.ToString;
 public class NetworkListFragment extends Fragment {
     public static final String NETWORK_ID_MESSAGE = "com.zerotier.one.network-id";
     public static final String TAG = "NetworkListFragment";
+    private static final String TRACE = "CONNECT_TRACE";
     private final EventBus eventBus;
     private final List<Network> mNetworks = new ArrayList<>();
     boolean mIsBound = false;
@@ -102,9 +112,23 @@ public class NetworkListFragment extends Fragment {
             NetworkListFragment.this.setIsBound(false);
         }
     };
-    private TextView nodeIdView;
     private TextView nodeStatusView;
     private TextView nodeClientVersionView;
+    private MaterialToolbar topAppBar;
+    private TextView topConnectionSummary;
+    private TextView topIntranetSummary;
+    private String p2pSummary = "";
+    private String intranetSummary = "";
+    /**
+     * 当前内网判定（true=内网，false=非内网，null=未知/未更新）。
+     */
+    private Boolean intranetDetected = null;
+    /**
+     * true 表示当前处于“监听态”（ZeroTier 运行时已停，但服务保持监听网络变化）。
+     */
+    private boolean monitorOnlyModeActive = false;
+    private static final long SWITCH_INTERACTION_LOCK_MS = 2500L;
+    private volatile long switchInteractionLockedUntilMs = 0L;
 
     private View emptyView = null;
     final private RecyclerView.AdapterDataObserver checkIfEmptyObserver = new RecyclerView.AdapterDataObserver() {
@@ -201,6 +225,8 @@ public class NetworkListFragment extends Fragment {
         // 初始化节点及服务状态
         this.eventBus.post(new NodeStatusRequestEvent());
         this.eventBus.post(new IsServiceRunningRequestEvent());
+        this.eventBus.post(new PeerInfoRequestEvent());
+        requestIntranetProbeForUi("ui_start");
 
         // 检查通知权限
         var notificationManager = NotificationManagerCompat.from(requireContext());
@@ -225,6 +251,10 @@ public class NetworkListFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_network_list, container, false);
+        this.topAppBar = view.findViewById(R.id.top_app_bar);
+        this.topConnectionSummary = view.findViewById(R.id.top_connection_summary);
+        this.topIntranetSummary = view.findViewById(R.id.top_intranet_summary);
+        initTopAppBar();
 
         // 空列表提示
         this.emptyView = view.findViewById(R.id.no_data);
@@ -238,29 +268,81 @@ public class NetworkListFragment extends Fragment {
         this.recyclerView.setAdapter(this.recyclerViewAdapter);
 
         // 网络状态栏设置
-        this.nodeIdView = view.findViewById(R.id.node_id);
         this.nodeStatusView = view.findViewById(R.id.node_status);
         this.nodeClientVersionView = view.findViewById(R.id.client_version);
-        setNodeIdText();
+        this.nodeClientVersionView.setText(resolveCoreVersionDisplayText());
         TextView appVersionView = view.findViewById(R.id.app_version);
-        appVersionView.setText(String.format(getString(R.string.app_version_format),
-                BuildConfig.VERSION_NAME));
+        appVersionView.setText(getString(R.string.bottom_app_prefix, BuildConfig.VERSION_NAME));
 
         // 加载网络数据
         updateNetworkListAndNotify();
 
-        // 设置添加按钮
-        FloatingActionButton fab = view.findViewById(R.id.fab_add_network);
-        fab.setOnClickListener(parentView -> {
-            Log.d(TAG, "Selected Join Network");
-            startActivity(new Intent(getActivity(), JoinNetworkActivity.class));
-        });
+        // 处理系统栏安全区，避免顶部标题栏和底部状态栏与系统栏重叠
+        applyWindowInsets(view);
 
         // 当前连接网络变更时更新列表
-        this.viewModel.getConnectNetworkId().observe(getViewLifecycleOwner(), networkId ->
-                this.recyclerViewAdapter.notifyDataSetChanged());
+        this.viewModel.getConnectNetworkId().observe(getViewLifecycleOwner(), networkId -> {
+            this.recyclerViewAdapter.notifyDataSetChanged();
+            refreshTopAppBarSubtitle();
+        });
 
         return view;
+    }
+
+    /**
+     * 处理状态栏与导航栏的安全区间距。
+     * 顶部给 AppBar 增加状态栏高度，底部给列表与底栏增加导航栏高度。
+     */
+    private void applyWindowInsets(View root) {
+        View appBar = root.findViewById(R.id.app_bar);
+        View statusBar = root.findViewById(R.id.status_bar);
+        View noData = root.findViewById(R.id.no_data);
+        if (appBar == null || statusBar == null || this.recyclerView == null || noData == null) {
+            return;
+        }
+
+        final int appBarPaddingTop = appBar.getPaddingTop();
+        final int statusBarPaddingBottom = statusBar.getPaddingBottom();
+        final int recyclerPaddingBottom = this.recyclerView.getPaddingBottom();
+        final int noDataPaddingBottom = noData.getPaddingBottom();
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            // 顶部同时考虑状态栏和挖孔区域，兼容刘海/打孔屏机型
+            Insets statusInsets = insets.getInsets(
+                    WindowInsetsCompat.Type.statusBars() | WindowInsetsCompat.Type.displayCutout()
+            );
+            Insets navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
+
+            // 顶部区域下沉，避开状态栏（时间、电量、信号）
+            appBar.setPadding(
+                    appBar.getPaddingLeft(),
+                    appBarPaddingTop + statusInsets.top,
+                    appBar.getPaddingRight(),
+                    appBar.getPaddingBottom()
+            );
+
+            // 底部状态栏贴底显示，仅给列表和空态补齐手势条安全区
+            statusBar.setPadding(
+                    statusBar.getPaddingLeft(),
+                    statusBar.getPaddingTop(),
+                    statusBar.getPaddingRight(),
+                    statusBarPaddingBottom
+            );
+            this.recyclerView.setPadding(
+                    this.recyclerView.getPaddingLeft(),
+                    this.recyclerView.getPaddingTop(),
+                    this.recyclerView.getPaddingRight(),
+                    recyclerPaddingBottom + navInsets.bottom
+            );
+            noData.setPadding(
+                    noData.getPaddingLeft(),
+                    noData.getPaddingTop(),
+                    noData.getPaddingRight(),
+                    noDataPaddingBottom + navInsets.bottom
+            );
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
     }
 
     /**
@@ -270,6 +352,8 @@ public class NetworkListFragment extends Fragment {
      */
     private void sendStartServiceIntent(long networkId) {
         var prepare = VpnService.prepare(requireActivity());
+        Log.i(TAG, TRACE + " sendStartServiceIntent networkId=" + Long.toHexString(networkId)
+                + " needVpnAuth=" + (prepare != null));
         if (prepare != null) {
             // 等待 VPN 授权后连接网络
             this.viewModel.setNetworkId(networkId);
@@ -285,7 +369,8 @@ public class NetworkListFragment extends Fragment {
         Log.d(TAG, "NetworkListFragment.onCreate");
         super.onCreate(savedInstanceState);
         PreferenceManager.setDefaultValues(getActivity(), R.xml.preferences, false);
-        setHasOptionsMenu(true);
+        this.p2pSummary = getString(R.string.network_p2p_offline);
+        this.intranetSummary = getString(R.string.network_intranet_no);
 
         // 获取 ViewModel
         this.viewModel = new ViewModelProvider(requireActivity()).get(NetworkListModel.class);
@@ -294,26 +379,25 @@ public class NetworkListFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        this.nodeStatusView.setText(R.string.status_offline);
+        this.nodeStatusView.setText(R.string.bottom_node_placeholder);
+        if (this.nodeClientVersionView != null) {
+            this.nodeClientVersionView.setText(resolveCoreVersionDisplayText());
+        }
         this.eventBus.register(this);
         this.eventBus.post(new IsServiceRunningRequestEvent());
         updateNetworkListAndNotify();
         this.eventBus.post(new NetworkListRequestEvent());
         this.eventBus.post(new NodeStatusRequestEvent());
+        this.eventBus.post(new PeerInfoRequestEvent());
     }
 
-    @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, MenuInflater menuInflater) {
-        Log.d(TAG, "NetworkListFragment.onCreateOptionsMenu");
-        menuInflater.inflate(R.menu.menu_network_list, menu);
-        super.onCreateOptionsMenu(menu, menuInflater);
-        this.eventBus.post(new NodeStatusRequestEvent());
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem menuItem) {
+    private boolean onTopAppBarMenuItemSelected(MenuItem menuItem) {
         int menuId = menuItem.getItemId();
-        if (menuId == R.id.menu_item_settings) {
+        if (menuId == R.id.menu_item_add_network) {
+            Log.d(TAG, "Selected Join Network");
+            startActivity(new Intent(getActivity(), JoinNetworkActivity.class));
+            return true;
+        } else if (menuId == R.id.menu_item_settings) {
             Log.d(TAG, "Selected Settings");
             startActivity(new Intent(getActivity(), PrefsActivity.class));
             return true;
@@ -326,7 +410,7 @@ public class NetworkListFragment extends Fragment {
             startActivity(new Intent(getActivity(), MoonOrbitActivity.class));
             return true;
         }
-        return super.onOptionsItemSelected(menuItem);
+        return false;
     }
 
     @Override
@@ -341,13 +425,6 @@ public class NetworkListFragment extends Fragment {
         return daoSession.getNetworkDao().queryBuilder().orderAsc(NetworkDao.Properties.NetworkId).build().forCurrentThread().list();
     }
 
-    private void setNodeIdText() {
-        List<AppNode> list = ((ZerotierFixApplication) requireActivity().getApplication()).getDaoSession().getAppNodeDao().queryBuilder().build().forCurrentThread().list();
-        if (!list.isEmpty()) {
-            this.nodeIdView.setText(list.get(0).getNodeIdStr());
-        }
-    }
-
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onIsServiceRunningReply(IsServiceRunningReplyEvent event) {
         if (event.isRunning()) {
@@ -360,8 +437,26 @@ public class NetworkListFragment extends Fragment {
         Log.d(TAG, "Got connecting network list");
         // 更新当前连接的网络
         var networks = event.getNetworkList();
-        for (var network : networks) {
-            this.viewModel.doChangeConnectNetwork(network.getNwid());
+        StringBuilder ids = new StringBuilder();
+        if (networks != null) {
+            for (var network : networks) {
+                if (ids.length() > 0) {
+                    ids.append(",");
+                }
+                ids.append(Long.toHexString(network.getNwid()));
+            }
+        }
+        Log.i(TAG, TRACE + " onNetworkListReply count=" + (networks == null ? 0 : networks.length)
+                + " nwids=" + ids);
+        if (networks == null || networks.length == 0) {
+            // 监听态下网络列表为空属于预期，不应清空用户的连接意图（开关保持开启）
+            if (!this.monitorOnlyModeActive) {
+                this.viewModel.doChangeConnectNetwork(null);
+            }
+        } else {
+            // 当前服务只连接一个网络，取第一项作为当前连接网络即可。
+            this.viewModel.doChangeConnectNetwork(networks[0].getNwid());
+            this.monitorOnlyModeActive = false;
         }
         // 更新网络列表
         updateNetworkListAndNotify();
@@ -371,6 +466,8 @@ public class NetworkListFragment extends Fragment {
     public void onVirtualNetworkConfigChanged(VirtualNetworkConfigChangedEvent event) {
         Log.d(TAG, "Got Network Info");
         var config = event.getVirtualNetworkConfig();
+        Log.i(TAG, TRACE + " onVirtualNetworkConfigChanged nwid=" + Long.toHexString(config.getNwid())
+                + " status=" + config.getStatus() + " name=" + config.getName());
 
         // Toast 提示网络状态
         var status = NetworkStatus.fromVirtualNetworkStatus(config.getStatus());
@@ -407,11 +504,6 @@ public class NetworkListFragment extends Fragment {
         updateNetworkListAndNotify();
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onNodeID(NodeIDEvent nodeIDEvent) {
-        setNodeIdText();
-    }
-
     /**
      * 节点状态事件回调
      *
@@ -421,39 +513,216 @@ public class NetworkListFragment extends Fragment {
     public void onNodeStatus(NodeStatusEvent event) {
         NodeStatus status = event.getStatus();
         Version clientVersion = event.getClientVersion();
-        // 更新在线状态
+        Log.i(TAG, TRACE + " onNodeStatus online=" + status.isOnline()
+                + " address=" + Long.toHexString(status.getAddress()));
         if (status.isOnline()) {
-            this.nodeStatusView.setText(R.string.status_online);
-            if (this.nodeIdView != null) {
-                this.nodeIdView.setText(Long.toHexString(status.getAddress()));
-            }
-        } else {
-            setOfflineState();
+            this.monitorOnlyModeActive = false;
+            unlockSwitchInteraction();
         }
+        this.nodeStatusView.setText(getString(R.string.bottom_node_prefix, Long.toHexString(status.getAddress())));
         // 更新客户端版本
-        if (this.nodeClientVersionView != null) {
-            this.nodeClientVersionView.setText(StringUtils.toString(clientVersion));
+        if (this.nodeClientVersionView != null && clientVersion != null) {
+            String coreVersion = StringUtils.toString(clientVersion);
+            this.nodeClientVersionView.setText(getString(R.string.bottom_core_prefix, coreVersion));
+            PreferenceManager.getDefaultSharedPreferences(requireContext())
+                    .edit()
+                    .putString(Constants.PREF_UI_LAST_CORE_VERSION, coreVersion)
+                    .apply();
         }
+        refreshTopAppBarSubtitle();
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onNodeDestroyed(NodeDestroyedEvent event) {
+        Log.i(TAG, TRACE + " onNodeDestroyed keepServiceAlive=" + event.isKeepServiceAlive());
+        this.monitorOnlyModeActive = event.isKeepServiceAlive();
+        // 仅在“完整停服/用户主动关闭”时清空连接状态；
+        // 监听态下保留用户连接意图（开关保持开启）。
+        if (!event.isKeepServiceAlive()) {
+            this.viewModel.doChangeConnectNetwork(null);
+        }
+        unlockSwitchInteraction();
         setOfflineState();
+        if (this.recyclerViewAdapter != null) {
+            this.recyclerViewAdapter.notifyDataSetChanged();
+        }
+    }
+
+    /**
+     * 收到 Peer 信息后，按“是否存在 P2P 直连”更新状态摘要。
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onPeerInfoReplyEvent(PeerInfoReplyEvent event) {
+        this.p2pSummary = buildP2PSummary(event.getPeers());
+        var peers = event.getPeers();
+        Log.i(TAG, TRACE + " onPeerInfoReply count=" + (peers == null ? 0 : peers.length)
+                + " p2pSummary=" + this.p2pSummary);
+        if (this.recyclerViewAdapter != null) {
+            this.recyclerViewAdapter.notifyDataSetChanged();
+        }
+        refreshTopAppBarSubtitle();
+    }
+
+    /**
+     * 接收内网判定事件并刷新顶部摘要。
+     *
+     * @param event 内网判定事件
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onIntranetCheckStateEvent(IntranetCheckStateEvent event) {
+        // “未知”统一视为“否”；是否展示由 refreshTopAppBarSubtitle 中的配置判定控制。
+        this.intranetDetected = event.getInIntranet();
+        if (event.isEnabled() && Boolean.TRUE.equals(event.getInIntranet())) {
+            this.monitorOnlyModeActive = true;
+        }
+        if (Boolean.TRUE.equals(event.getInIntranet())) {
+            this.intranetSummary = getString(R.string.network_intranet_yes);
+        } else {
+            this.intranetSummary = getString(R.string.network_intranet_no);
+        }
+        updateNetworkListAndNotify();
+    }
+
+    /**
+     * 页面启动时主动执行一次内网探测，确保“未启动服务”场景也能显示当前内网状态。
+     *
+     * @param reason 探测触发原因
+     */
+    private void requestIntranetProbeForUi(String reason) {
+        Context appContext = requireContext().getApplicationContext();
+        Thread checker = new Thread(() -> {
+            boolean enabled = AutoConnectPolicy.isAutoRouteCheckEnabled(appContext);
+            AutoConnectPolicy.ProbeResult result = AutoConnectPolicy.detectIntranetState(appContext);
+            this.eventBus.post(new IntranetCheckStateEvent(enabled, result.getInIntranet(), reason, result.getDetail()));
+        }, "UIIntranetProbe");
+        checker.start();
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onVPNError(VPNErrorEvent event) {
         var errorMessage = event.getMessage();
+        Log.e(TAG, TRACE + " onVPNError message=" + errorMessage);
         var message = getString(R.string.toast_vpn_error, errorMessage);
         Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+        // VPN 建链失败时回退连接状态，保证 UI 与实际状态一致
+        this.viewModel.doChangeConnectNetwork(null);
+        unlockSwitchInteraction();
         updateNetworkListAndNotify();
     }
 
     private void setOfflineState() {
         TextView textView = this.nodeStatusView;
         if (textView != null) {
-            textView.setText(R.string.status_offline);
+            textView.setText(R.string.bottom_node_placeholder);
         }
+        this.p2pSummary = getString(R.string.network_p2p_offline);
+        refreshTopAppBarSubtitle();
+    }
+
+    /**
+     * 根据网络状态映射状态色。
+     *
+     * @param status 内核网络状态
+     * @return 对应颜色值
+     */
+    private int resolveStatusColor(NetworkStatus status) {
+        if (status == null) {
+            return ContextCompat.getColor(requireContext(), R.color.status_neutral);
+        }
+        switch (status) {
+            case OK:
+                return ContextCompat.getColor(requireContext(), R.color.status_ok);
+            case REQUESTING_CONFIGURATION:
+                return ContextCompat.getColor(requireContext(), R.color.status_progress);
+            case ACCESS_DENIED:
+            case NOT_FOUND:
+            case PORT_ERROR:
+            case CLIENT_TOO_OLD:
+            case AUTHENTICATION_REQUIRED:
+                return ContextCompat.getColor(requireContext(), R.color.status_error);
+            default:
+                return ContextCompat.getColor(requireContext(), R.color.status_neutral);
+        }
+    }
+
+    /**
+     * 规范字段标签文本，避免出现双冒号。
+     *
+     * @param rawLabel 原始资源标签
+     * @return 去尾部冒号后的标签
+     */
+    private String normalizeFieldLabel(String rawLabel) {
+        if (rawLabel == null) {
+            return "";
+        }
+        String label = rawLabel.trim();
+        while (label.endsWith(":") || label.endsWith("：")) {
+            label = label.substring(0, label.length() - 1).trim();
+        }
+        return label;
+    }
+
+    /**
+     * 解析 Core 版本显示文案：
+     * 1) 优先直接读取 JNI Core 版本（不依赖连接状态）；
+     * 2) 失败时回退到缓存版本；
+     * 3) 仍无结果时展示占位文案。
+     */
+    private String resolveCoreVersionDisplayText() {
+        String coreVersion = "";
+        try {
+            Version version = new Node(System.currentTimeMillis()).getVersion();
+            if (version != null) {
+                coreVersion = StringUtils.toString(version);
+                PreferenceManager.getDefaultSharedPreferences(requireContext())
+                        .edit()
+                        .putString(Constants.PREF_UI_LAST_CORE_VERSION, coreVersion)
+                        .apply();
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "Read core version from JNI failed", t);
+        }
+        if (coreVersion == null || coreVersion.isEmpty()) {
+            coreVersion = PreferenceManager
+                    .getDefaultSharedPreferences(requireContext())
+                    .getString(Constants.PREF_UI_LAST_CORE_VERSION, "");
+        }
+        if (coreVersion == null || coreVersion.isEmpty()) {
+            return getString(R.string.bottom_core_placeholder);
+        }
+        return getString(R.string.bottom_core_prefix, coreVersion);
+    }
+
+    /**
+     * 根据 Peer 列表判断 P2P 是否启用。
+     * 规则：只要存在一个可用首选路径（preferred path 且 address 非空），即判定为“已启用”。
+     *
+     * @param peers 当前节点可见的 Peer 列表
+     * @return P2P 状态文案（已启用/未启用）
+     */
+    private String buildP2PSummary(Peer[] peers) {
+        if (peers == null || peers.length == 0) {
+            return getString(R.string.network_p2p_offline);
+        }
+        for (Peer peer : peers) {
+            if (peer == null) {
+                continue;
+            }
+            PeerPhysicalPath preferred = null;
+            PeerPhysicalPath[] paths = peer.getPaths();
+            if (paths != null) {
+                for (PeerPhysicalPath path : paths) {
+                    if (path != null && path.isPreferred()) {
+                        preferred = path;
+                        break;
+                    }
+                }
+            }
+            if (preferred != null && preferred.getAddress() != null) {
+                return getString(R.string.network_p2p_waiting);
+            }
+        }
+        return getString(R.string.network_p2p_offline);
     }
 
     /**
@@ -478,6 +747,7 @@ public class NetworkListFragment extends Fragment {
         if (this.recyclerViewAdapter != null) {
             this.recyclerViewAdapter.notifyDataSetChanged();
         }
+        refreshTopAppBarSubtitle();
     }
 
     /**
@@ -486,6 +756,7 @@ public class NetworkListFragment extends Fragment {
      * @param networkId 网络号
      */
     private void startService(long networkId) {
+        Log.i(TAG, TRACE + " startService networkId=" + Long.toHexString(networkId));
         var intent = new Intent(requireActivity(), ZeroTierOneService.class);
         intent.putExtra(ZeroTierOneService.ZT1_NETWORK_ID, networkId);
         doBindService();
@@ -496,6 +767,7 @@ public class NetworkListFragment extends Fragment {
      * 停止 ZT 服务
      */
     private void stopService() {
+        this.monitorOnlyModeActive = false;
         if (this.mBoundService != null) {
             this.mBoundService.stopZeroTier();
         }
@@ -528,20 +800,32 @@ public class NetworkListFragment extends Fragment {
         this.eventBus.post(new OrbitMoonEvent(moonOrbits));
     }
 
+    /**
+     * 处理首页网络卡片的连接开关事件。
+     * <p>
+     * 链路规则：
+     * 1) 先校验当前外网可用性与移动网络策略，避免“先断后判”导致误断线；
+     * 2) 仅在“已有其他网络连接”时才执行停服切换；
+     * 3) 最后再启动/加入目标网络并同步 UI 状态。
+     *
+     * @param event 开关事件（包含开关句柄、目标状态和目标网络）
+     */
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void onNetworkListCheckedChangeEvent(NetworkListCheckedChangeEvent event) {
         var switchHandle = event.getSwitchHandle();
         var checked = event.isChecked();
         var selectedNetwork = event.getSelectedNetwork();
+        if (isSwitchInteractionLocked()) {
+            Log.w(TAG, TRACE + " switchChange ignored: operation in progress");
+            requireActivity().runOnUiThread(this::updateNetworkListAndNotify);
+            return;
+        }
+        lockSwitchInteraction();
+        Log.i(TAG, TRACE + " switchChange checked=" + checked + " selectedNwid="
+                + Long.toHexString(selectedNetwork.getNetworkId()) + " isBound=" + this.isBound()
+                + " hasService=" + (this.mBoundService != null));
         if (checked) {
-            // 退出已连接的网络
-            Long connectedNetworkId = this.viewModel.getConnectNetworkId().getValue();
-            if (connectedNetworkId != null) {
-                this.mBoundService.leaveNetwork(connectedNetworkId);
-            }
-            stopService();
-            this.viewModel.doChangeConnectNetwork(null);
-            // 启动网络
+            // 先校验外网与策略，避免在不可连接时先断开当前网络
             var context = requireContext();
             boolean useCellularData = PreferenceManager
                     .getDefaultSharedPreferences(context)
@@ -550,12 +834,27 @@ public class NetworkListFragment extends Fragment {
                     .getSystemService(Context.CONNECTIVITY_SERVICE))
                     .getActiveNetworkInfo();
             if (activeNetworkInfo == null || !activeNetworkInfo.isConnectedOrConnecting()) {
+                Log.w(TAG, TRACE + " switchOn blocked: no network");
                 // 设备无网络
                 requireActivity().runOnUiThread(() -> {
                     Toast.makeText(NetworkListFragment.this.getContext(), R.string.toast_no_network, Toast.LENGTH_SHORT).show();
                     switchHandle.setChecked(false);
                 });
             } else if (useCellularData || !(activeNetworkInfo.getType() == 0)) {
+                Long connectedNetworkId = this.viewModel.getConnectNetworkId().getValue();
+                boolean hasConnectedNetwork = connectedNetworkId != null;
+                boolean switchingAnotherNetwork = hasConnectedNetwork
+                        && !connectedNetworkId.equals(selectedNetwork.getNetworkId());
+                // 仅当切换到“另一个网络”时才先断旧连接，避免自连接场景被无意义 stopService 打断
+                if (switchingAnotherNetwork) {
+                    Log.i(TAG, TRACE + " switching network oldNwid=" + Long.toHexString(connectedNetworkId)
+                            + " newNwid=" + Long.toHexString(selectedNetwork.getNetworkId()));
+                    if (this.mBoundService != null) {
+                        this.mBoundService.leaveNetwork(connectedNetworkId);
+                    }
+                    stopService();
+                    this.viewModel.doChangeConnectNetwork(null);
+                }
                 // 可以连接至网络
                 // 更新 DB 中的网络状态
                 DatabaseUtils.writeLock.lock();
@@ -569,15 +868,15 @@ public class NetworkListFragment extends Fragment {
                 } finally {
                     DatabaseUtils.writeLock.unlock();
                 }
-                // 连接目标网络
-                if (!this.isBound()) {
-                    this.sendStartServiceIntent(selectedNetwork.getNetworkId());
-                } else {
-                    this.mBoundService.joinNetwork(selectedNetwork.getNetworkId());
-                }
+                // 连接目标网络统一走 startService 主链路，避免绑定态下 node 为空导致 join 直接失败。
+                Log.i(TAG, TRACE + " join via startService nwid="
+                        + Long.toHexString(selectedNetwork.getNetworkId()));
+                this.sendStartServiceIntent(selectedNetwork.getNetworkId());
                 this.viewModel.doChangeConnectNetwork(selectedNetwork.getNetworkId());
                 Log.d(TAG, "Joining Network: " + selectedNetwork.getNetworkIdStr());
+                requireActivity().runOnUiThread(this::updateNetworkListAndNotify);
             } else {
+                Log.w(TAG, TRACE + " switchOn blocked: mobile data disabled");
                 // 移动数据且未确认
                 requireActivity().runOnUiThread(() -> {
                     Toast.makeText(this.getContext(), R.string.toast_mobile_data, Toast.LENGTH_SHORT).show();
@@ -586,6 +885,7 @@ public class NetworkListFragment extends Fragment {
             }
         } else {
             // 关闭网络
+            Log.i(TAG, TRACE + " switchOff nwid=" + Long.toHexString(selectedNetwork.getNetworkId()));
             Log.d(TAG, "Leaving Leaving Network: " + selectedNetwork.getNetworkIdStr());
             if (this.isBound() && this.mBoundService != null) {
                 this.mBoundService.leaveNetwork(selectedNetwork.getNetworkId());
@@ -593,6 +893,7 @@ public class NetworkListFragment extends Fragment {
             }
             this.stopService();
             this.viewModel.doChangeConnectNetwork(null);
+            requireActivity().runOnUiThread(this::updateNetworkListAndNotify);
         }
     }
 
@@ -635,6 +936,118 @@ public class NetworkListFragment extends Fragment {
         builder.create().show();
     }
 
+    private void initTopAppBar() {
+        if (this.topAppBar == null) {
+            return;
+        }
+        this.topAppBar.setOverflowIcon(AppCompatResources.getDrawable(requireContext(), R.drawable.ic_more_vert_24));
+        this.topAppBar.setTitle(getString(R.string.app_name));
+        refreshTopAppBarSubtitle();
+        this.topAppBar.setOnMenuItemClickListener(this::onTopAppBarMenuItemSelected);
+    }
+
+    private void refreshTopAppBarSubtitle() {
+        if (this.topConnectionSummary == null) {
+            return;
+        }
+        String intranet = this.intranetSummary == null || this.intranetSummary.isEmpty()
+                ? getString(R.string.network_intranet_no)
+                : this.intranetSummary;
+        String networkInfo = "";
+        NetworkStatus connectedKernelStatus = null;
+        Long connectedNetworkId = this.viewModel == null ? null : this.viewModel.getConnectNetworkId().getValue();
+        if (connectedNetworkId != null) {
+            for (var network : this.mNetworks) {
+                if (connectedNetworkId.equals(network.getNetworkId())) {
+                    String networkName = network.getNetworkName();
+                    if (networkName != null && !networkName.isEmpty()) {
+                        networkInfo = networkName;
+                    } else {
+                        networkInfo = network.getNetworkIdStr();
+                    }
+                    var networkConfig = network.getNetworkConfig();
+                    if (networkConfig != null) {
+                        connectedKernelStatus = networkConfig.getStatus();
+                    }
+                    break;
+                }
+            }
+        }
+        boolean hasConnectedNetwork = connectedNetworkId != null;
+        String statusText;
+        NetworkStatus displayStatusForColor = null;
+        if (!hasConnectedNetwork) {
+            statusText = getString(R.string.network_disconnected);
+        } else if (connectedKernelStatus == null || connectedKernelStatus == NetworkStatus.REQUESTING_CONFIGURATION) {
+            statusText = getString(R.string.network_status_requesting_configuration);
+            displayStatusForColor = NetworkStatus.REQUESTING_CONFIGURATION;
+        } else {
+            statusText = getString(connectedKernelStatus.toStringId());
+            displayStatusForColor = connectedKernelStatus;
+        }
+
+        StringBuilder summary = new StringBuilder(statusText);
+        if (!networkInfo.isEmpty()) {
+            summary.append(" ").append(networkInfo);
+        }
+        this.topConnectionSummary.setText(summary.toString());
+        this.topConnectionSummary.setTextColor(hasConnectedNetwork
+                ? resolveStatusColor(displayStatusForColor)
+                : ContextCompat.getColor(requireContext(), R.color.status_neutral));
+        if (this.topIntranetSummary != null) {
+            boolean showIntranetSummary = shouldShowIntranetSummary();
+            if (showIntranetSummary) {
+                this.topIntranetSummary.setVisibility(View.VISIBLE);
+                this.topIntranetSummary.setText(intranet);
+                this.topIntranetSummary.setTextColor(ContextCompat.getColor(requireContext(), R.color.status_text_primary));
+            } else {
+                this.topIntranetSummary.setVisibility(View.GONE);
+            }
+        }
+    }
+
+    /**
+     * 判断顶部是否应显示“内网：是/否”。
+     * <p>
+     * 规则：
+     * 1) 自动内网策略未开启：不显示；
+     * 2) 探测 IP 未配置：不显示；
+     * 3) 仅在“已开启且已配置”时显示。
+     *
+     * @return true 显示；false 隐藏
+     */
+    private boolean shouldShowIntranetSummary() {
+        if (!isAdded()) {
+            return false;
+        }
+        Context appContext = requireContext().getApplicationContext();
+        return AutoConnectPolicy.isAutoRouteCheckEnabled(appContext)
+                && AutoConnectPolicy.isConfigReady(appContext);
+    }
+
+    /**
+     * 当前是否处于开关交互锁定窗口（防抖/防连点）。
+     *
+     * @return true 表示暂时禁止点击开关
+     */
+    private boolean isSwitchInteractionLocked() {
+        return SystemClock.elapsedRealtime() < this.switchInteractionLockedUntilMs;
+    }
+
+    /**
+     * 锁定开关交互，避免连接流程被连续点击打断。
+     */
+    private void lockSwitchInteraction() {
+        this.switchInteractionLockedUntilMs = SystemClock.elapsedRealtime() + SWITCH_INTERACTION_LOCK_MS;
+    }
+
+    /**
+     * 解除开关交互锁。
+     */
+    private void unlockSwitchInteraction() {
+        this.switchInteractionLockedUntilMs = 0L;
+    }
+
     /**
      * 网络信息列表适配器
      */
@@ -660,12 +1073,24 @@ public class NetworkListFragment extends Fragment {
             Network network = mValues.get(position);
             holder.mItem = network;
             // 设置文本信息
-            holder.mNetworkId.setText(network.getNetworkIdStr());
+            holder.mNetworkId.setText(getString(
+                    R.string.status_line_format,
+                    normalizeFieldLabel(getString(R.string.network_id)),
+                    network.getNetworkIdStr()
+            ));
             String networkName = network.getNetworkName();
             if (networkName != null && !networkName.isEmpty()) {
-                holder.mNetworkName.setText(networkName);
+                holder.mNetworkName.setText(getString(
+                        R.string.status_line_format,
+                        normalizeFieldLabel(getString(R.string.network_name)),
+                        networkName
+                ));
             } else {
-                holder.mNetworkName.setText(R.string.empty_network_name);
+                holder.mNetworkName.setText(getString(
+                        R.string.status_line_format,
+                        normalizeFieldLabel(getString(R.string.network_name)),
+                        getString(R.string.empty_network_name)
+                ));
             }
             // 设置点击事件
             holder.mView.setOnClickListener(holder::onClick);
@@ -679,7 +1104,56 @@ public class NetworkListFragment extends Fragment {
             // 设置开关
             holder.mSwitch.setOnCheckedChangeListener(null);
             holder.mSwitch.setChecked(connected);
+            // 卡片状态统一采用内核回调状态，不使用开关状态推断
+            NetworkStatus kernelStatus = null;
+            var networkConfig = network.getNetworkConfig();
+            if (networkConfig != null) {
+                kernelStatus = networkConfig.getStatus();
+            }
+            boolean pendingKernelState = connected && (kernelStatus == null
+                    || kernelStatus == NetworkStatus.REQUESTING_CONFIGURATION);
+            holder.mSwitch.setEnabled(!NetworkListFragment.this.isSwitchInteractionLocked()
+                    && !pendingKernelState);
             holder.mSwitch.setOnCheckedChangeListener(holder::onSwitchCheckedChanged);
+            NetworkStatus displayStatus = null;
+            String displayStatusText;
+            if (!connected) {
+                displayStatusText = getString(R.string.network_disconnected);
+            } else if (kernelStatus == null) {
+                displayStatus = NetworkStatus.REQUESTING_CONFIGURATION;
+                displayStatusText = getString(R.string.network_status_requesting_configuration);
+            } else {
+                displayStatus = kernelStatus;
+                displayStatusText = getString(kernelStatus.toStringId());
+            }
+            holder.mNetworkState.setText(getString(
+                    R.string.status_line_format,
+                    getString(R.string.network_status),
+                    displayStatusText
+            ));
+            holder.mNetworkState.setTextColor(NetworkListFragment.this.resolveStatusColor(displayStatus));
+            boolean kernelConnected = connected && displayStatus == NetworkStatus.OK;
+            String p2pText = kernelConnected
+                    ? ((NetworkListFragment.this.p2pSummary == null || NetworkListFragment.this.p2pSummary.isEmpty())
+                    ? getString(R.string.network_p2p_offline)
+                    : NetworkListFragment.this.p2pSummary)
+                    : getString(R.string.network_p2p_offline);
+            holder.mNetworkP2P.setText(p2pText);
+            boolean p2pEnabled = kernelConnected
+                    && getString(R.string.network_p2p_waiting).equals(holder.mNetworkP2P.getText().toString());
+            holder.mNetworkP2P.setTextColor(ContextCompat.getColor(
+                    holder.mView.getContext(),
+                    p2pEnabled ? R.color.status_ok : R.color.status_neutral
+            ));
+            boolean showIntranetHint = shouldShowIntranetSummary() && Boolean.TRUE.equals(NetworkListFragment.this.intranetDetected);
+            if (showIntranetHint) {
+                holder.mNetworkIntranetHint.setVisibility(View.VISIBLE);
+                holder.mNetworkIntranetHint.setText(R.string.network_intranet_skip_hint);
+                holder.mNetworkIntranetHint.setTextColor(ContextCompat.getColor(
+                        holder.mView.getContext(), R.color.status_neutral));
+            } else {
+                holder.mNetworkIntranetHint.setVisibility(View.GONE);
+            }
         }
 
         @Override
@@ -692,6 +1166,9 @@ public class NetworkListFragment extends Fragment {
             public final View mView;
             public final TextView mNetworkId;
             public final TextView mNetworkName;
+            public final TextView mNetworkState;
+            public final TextView mNetworkP2P;
+            public final TextView mNetworkIntranetHint;
             public final SwitchCompat mSwitch;
             public Network mItem;
 
@@ -700,6 +1177,9 @@ public class NetworkListFragment extends Fragment {
                 mView = view;
                 mNetworkId = view.findViewById(R.id.network_list_network_id);
                 mNetworkName = view.findViewById(R.id.network_list_network_name);
+                mNetworkState = view.findViewById(R.id.network_list_network_state);
+                mNetworkP2P = view.findViewById(R.id.network_list_network_p2p);
+                mNetworkIntranetHint = view.findViewById(R.id.network_list_network_intranet_hint);
                 mSwitch = view.findViewById(R.id.network_start_network_switch);
             }
 

@@ -44,6 +44,7 @@
     <string name="network_status_requesting_configuration">Requesting Configuration</string>
     <string name="network_status_unknown">Unknown</string>
     <string name="network_status_authentication_required">Authentication Required</string>
+    <string name="status_line_format">%1$s: %2$s</string>
     <string name="network_type">Type</string>
     <string name="network_type_label">Type:</string>
     <string name="network_type_private">Private</string>
@@ -53,7 +54,22 @@
     <string name="no_dns_text">DNS settings will not be configured.</string>
     <string name="planet_settings">Planet Settings</string>
     <string name="preferences_general">General Settings</string>
+    <string name="preferences_theme_mode">Theme Mode</string>
+    <string name="preferences_theme_mode_summary">Choose system auto switch or set a fixed light/dark mode manually.</string>
+    <string name="theme_mode_system">Follow system</string>
+    <string name="theme_mode_light">Light</string>
+    <string name="theme_mode_dark">Dark</string>
     <string name="preferences_general_start_on_boot">Start ZeroTier Fix on Device Startup</string>
+    <string name="preferences_general_start_on_boot_summary">Auto-start ZeroTier at boot and reconnect last activated network.</string>
+    <string name="planet_auto_route_check">Auto Route Check by Intranet IP</string>
+    <string name="planet_auto_route_check_summary">If enabled, app checks intranet probe IP first. Reachable means skip ZeroTier route forwarding.</string>
+    <string name="planet_intranet_probe_ip">Intranet Probe IP</string>
+    <string name="planet_intranet_probe_ip_summary">Optional. If empty, auto route forwarding check stays disabled.</string>
+    <string name="planet_probe_ip_help">Fill an intranet address that should be reachable in your LAN, for example 192.168.1.1 or 10.0.0.1.</string>
+    <string name="planet_probe_ip_hint">example: 192.168.1.1</string>
+    <string name="planet_probe_ip_not_set">Not set (tap to configure)</string>
+    <string name="invalid_probe_ip">Invalid IP format</string>
+    <string name="action_save">Save</string>
     <string name="preferences_network">Network Settings</string>
     <string name="preferences_network_auto_rejoin">Automatically Re-join Networks on Start</string>
     <string name="preferences_network_disable_ipv6">Disable IPv6</string>
@@ -77,6 +93,8 @@
     <string name="moon_orbit_activity">Moon Orbit</string>
     <string name="delete_moon_orbit">Delete</string>
     <string name="moon_seed_hint">Moon Seed is an arbitrary node that holds Moon information. If you are not sure, it can be the same as Moon World ID.</string>
+    <string name="moon_seed_inline">Seed %1$s</string>
+    <string name="moon_config_inline">Source %1$s</string>
     <string name="moon_orbit_info">Moon Orbit Information</string>
     <string name="add">Add</string>
     <string name="no_data">No data</string>
@@ -87,6 +105,17 @@
     <string name="moon_orbit_delete_success">Moon orbit deleted successfully. Disconnect &amp; reconnect for this setting to take effect.</string>
     <string name="unknown_version" translatable="false">-.-.-</string>
     <string name="network_connected">Connected</string>
+    <string name="network_disconnected">Disconnected</string>
+    <string name="network_p2p_unknown">P2P: unknown</string>
+    <string name="network_p2p_offline">P2P: disabled</string>
+    <string name="network_p2p_waiting">P2P: enabled</string>
+    <string name="network_intranet_yes">Intranet: Yes</string>
+    <string name="network_intranet_no">Intranet: No</string>
+    <string name="network_intranet_unknown">Intranet: --</string>
+    <string name="network_p2p_direct_only">P2P: direct peers (%1$d)</string>
+    <string name="network_p2p_relay_only">P2P: relay peers (%1$d)</string>
+    <string name="network_p2p_mixed">P2P: direct peers %1$d · relay peers %2$d</string>
+    <string name="network_intranet_skip_hint">Intranet detected: ZeroTier forwarding is currently skipped.</string>
     <string name="connected_to_network">Connected to %s</string>
     <string name="network_detail">Network Detail</string>
     <string name="peer_address">Peer Address:</string>
@@ -94,6 +123,9 @@
     <string name="peer_client_version">Client version:</string>
     <string name="peer_latency">Latency:</string>
     <string name="peer_preferred_path">Preferred path:</string>
+    <string name="peer_role_inline">Role %1$s</string>
+    <string name="peer_version_inline">Core %1$s</string>
+    <string name="peer_path_inline">Path %1$s</string>
     <string name="invalid_ipv4_dns">Invalid IPv4 DNS address.</string>
     <string name="invalid_ipv6_dns">Invalid IPv6 DNS address</string>
     <string name="peer_no_connection">No connection</string>
@@ -111,6 +143,7 @@
     <string name="use_custom_planet">Use Custom Planet</string>
     <string name="load_planet_file">Load planet file</string>
     <string name="enter_planet_file_url">Enter planet file url:</string>
+    <string name="planet_url_hint">https://example.com/planet</string>
     <string name="file">File</string>
     <string name="import_via_file">Import via file</string>
     <string name="url">URL</string>
@@ -139,6 +172,22 @@
     <string name="channel_description">Connection Status</string>
     <string name="notification_title_connected">Connected</string>
     <string name="notification_text_connected">Connected to: %1$s</string>
+    <string name="notification_primary_connected">Connected · %1$s</string>
+    <string name="notification_secondary_connected">IP %1$s · %2$s · %3$s</string>
+    <string name="notification_expanded_connected">Network: %1$s (%2$s)\nNode IP: %3$s\nLatency: %4$s\nSpeed: %5$s</string>
+    <string name="notification_action_disconnect">Disconnect</string>
+    <string name="notification_action_reconnect">Reconnect</string>
+    <string name="notification_action_open">Open</string>
+    <string name="notification_primary_connected_simple">Connected · %1$s</string>
+    <string name="notification_secondary_connected_simple">Speed %1$s</string>
+    <string name="bottom_node_prefix">Node %1$s</string>
+    <string name="bottom_node_placeholder">Node -</string>
+    <string name="bottom_status_prefix">State %1$s</string>
+    <string name="bottom_status_offline">State OFFLINE</string>
+    <string name="bottom_core_prefix">Core %1$s</string>
+    <string name="bottom_core_placeholder">Core unavailable</string>
+    <string name="bottom_app_prefix">App %1$s</string>
+    <string name="bottom_app_placeholder">App -.-.-</string>
     <string name="toast_vpn_application_not_prepared">VPN application is not prepared or is revoked.</string>
     <string name="toast_network_status_ok">Successfully connected to network %1$s</string>
     <string name="toast_network_status_access_denied">Cannot connect to network %1$s: Access denied</string>
@@ -154,3 +203,5 @@
     <string name="open_notification_settings">Goto notification settings</string>
     <string name="dont_show_again">Don\'t show again</string>
 </resources>
+
+

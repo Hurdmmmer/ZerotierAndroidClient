@@ -7,11 +7,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
-import android.widget.TableRow;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.UiThread;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -52,7 +54,7 @@ public class NetworkDetailFragment extends Fragment {
     private TextView dnsModeView;
     private CheckBox routeViaZtView;
     private TextView ipAddressesView;
-    private TableRow dnsView;
+    private View dnsView;
     private TextView dnsServersView;
 
 
@@ -99,8 +101,23 @@ public class NetworkDetailFragment extends Fragment {
         viewModel.getNetwork().observe(getViewLifecycleOwner(), this::updateNetwork);
         viewModel.getNetworkConfig().observe(getViewLifecycleOwner(), this::updateNetworkConfig);
         viewModel.getVirtualNetworkConfig().observe(getViewLifecycleOwner(), this::updateVirtualNetworkConfig);
+        // 处理导航栏安全区，避免详情底部内容被系统手势条遮挡
+        applyWindowInsets(view);
 
         return view;
+    }
+
+    /**
+     * 处理导航栏安全区：给 ScrollView 增加底部安全区间距。
+     */
+    private void applyWindowInsets(View root) {
+        final int paddingBottom = root.getPaddingBottom();
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
+            v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), paddingBottom + navInsets.bottom);
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
     }
 
     /**

@@ -21,13 +21,21 @@
             android:focusable="true"
             android:foreground="?attr/selectableItemBackground">
 
-            <ImageView
+            <FrameLayout
                 android:id="@+id/icon_url"
-                android:layout_width="25dp"
-                android:layout_height="25dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:layout_centerVertical="true"
                 android:layout_marginStart="22.5dp"
-                app:srcCompat="@drawable/baseline_cloud_download_24" />
+                android:background="@drawable/bg_brand_icon_container">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:tint="?attr/brandIconColor"
+                    app:srcCompat="@drawable/ic_cloud_download_24" />
+            </FrameLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -62,13 +70,21 @@
             android:focusable="true"
             android:foreground="?attr/selectableItemBackground">
 
-            <ImageView
+            <FrameLayout
                 android:id="@+id/icon_file"
-                android:layout_width="25dp"
-                android:layout_height="25dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:layout_centerVertical="true"
                 android:layout_marginStart="22.5dp"
-                app:srcCompat="@drawable/baseline_description_24" />
+                android:background="@drawable/bg_brand_icon_container">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:tint="?attr/brandIconColor"
+                    app:srcCompat="@drawable/ic_file_24" />
+            </FrameLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"

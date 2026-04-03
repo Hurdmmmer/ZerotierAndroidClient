@@ -30,6 +30,8 @@ import java.util.Objects;
 // TODO: clear up
 public class TunTapAdapter implements VirtualNetworkFrameListener {
     public static final String TAG = "TunTapAdapter";
+    private static final String TRACE = "CONNECT_TRACE";
+    private static final long TRACE_SAMPLE_INTERVAL_MS = 1000L;
     private static final int ARP_PACKET = 2054;
     private static final int IPV4_PACKET = 2048;
     private static final int IPV6_PACKET = 34525;
@@ -43,6 +45,10 @@ public class TunTapAdapter implements VirtualNetworkFrameListener {
     private FileOutputStream out;
     private Thread receiveThread;
     private ParcelFileDescriptor vpnSocket;
+    private final Object trafficStatsLock = new Object();
+    private long txBytesInterval = 0;
+    private long rxBytesInterval = 0;
+    private volatile long lastTraceSampleAtMs = 0L;
 
     public TunTapAdapter(ZeroTierOneService zeroTierOneService, long j) {
         this.ztService = zeroTierOneService;
@@ -165,9 +171,11 @@ public class TunTapAdapter implements VirtualNetworkFrameListener {
     }
 
     private void handleIPv4Packet(byte[] packetData) {
+        recordTxBytes(packetData.length);
         boolean isMulticast;
         long destMac;
-        var destIP = IPPacketUtils.getDestIP(packetData);
+        var originalDestIP = IPPacketUtils.getDestIP(packetData);
+        var destIP = originalDestIP;
         var sourceIP = IPPacketUtils.getSourceIP(packetData);
         var virtualNetworkConfig = this.ztService.getVirtualNetworkConfig(this.networkId);
 
@@ -208,14 +216,15 @@ public class TunTapAdapter implements VirtualNetworkFrameListener {
 
         var destRoute = InetAddressUtils.addressToRouteNo0Route(destIP, cidr);
         var sourceRoute = InetAddressUtils.addressToRouteNo0Route(sourceIP, cidr);
+        InetAddress forwardedDest = destIP;
         if (gateway != null && !Objects.equals(destRoute, sourceRoute)) {
-            destIP = gateway;
+            forwardedDest = gateway;
+            destIP = forwardedDest;
         }
         if (localV4Address == null) {
             Log.e(TAG, "Couldn't determine local address");
             return;
         }
-
         long localMac = virtualNetworkConfig.getMac();
         long[] nextDeadline = new long[1];
         if (isMulticast || this.arpTable.hasMacForAddress(destIP)) {
@@ -230,6 +239,7 @@ public class TunTapAdapter implements VirtualNetworkFrameListener {
                 Log.e(TAG, "Error calling processVirtualNetworkFrame: " + result.toString());
                 return;
             }
+            traceForwardingSample(sourceIP, originalDestIP, forwardedDest, route, gateway, result, false);
             Log.d(TAG, "Packet sent to ZT");
             this.ztService.setNextBackgroundTaskDeadline(nextDeadline[0]);
         } else {
@@ -242,12 +252,14 @@ public class TunTapAdapter implements VirtualNetworkFrameListener {
                 Log.e(TAG, "Error sending ARP packet: " + result.toString());
                 return;
             }
+            traceForwardingSample(sourceIP, originalDestIP, forwardedDest, route, gateway, result, true);
             Log.d(TAG, "ARP Request Sent!");
             this.ztService.setNextBackgroundTaskDeadline(nextDeadline[0]);
         }
     }
 
     private void handleIPv6Packet(byte[] packetData) {
+        recordTxBytes(packetData.length);
         var destIP = IPPacketUtils.getDestIP(packetData);
         var sourceIP = IPPacketUtils.getSourceIP(packetData);
         var virtualNetworkConfig = this.ztService.getVirtualNetworkConfig(this.networkId);
@@ -293,7 +305,6 @@ public class TunTapAdapter implements VirtualNetworkFrameListener {
             Log.e(TAG, "Couldn't determine local address");
             return;
         }
-
         long localMac = virtualNetworkConfig.getMac();
         long[] nextDeadline = new long[1];
 
@@ -394,7 +405,14 @@ public class TunTapAdapter implements VirtualNetworkFrameListener {
     }
 
     /**
-     * 响应并处理 ZT 网络发送至本节点的以太网帧
+     * 响应并处理 ZeroTier 网络发送至本节点的以太网帧。
+     *
+     * @param networkId 目标网络 ID
+     * @param srcMac    源 MAC 地址
+     * @param destMac   目标 MAC 地址
+     * @param etherType 以太网类型（ARP/IPv4/IPv6）
+     * @param vlanId    VLAN 标识
+     * @param frameData 原始以太网帧负载
      */
     @Override
     public void onVirtualNetworkFrame(long networkId, long srcMac, long destMac, long etherType,
@@ -412,6 +430,14 @@ public class TunTapAdapter implements VirtualNetworkFrameListener {
         } else if (etherType == ARP_PACKET) {
             // 收到 ARP 包。更新 ARP 表，若需要则进行应答
             Log.d(TAG, "Got ARP Packet");
+            if (frameData.length < 28) {
+                Log.w(TAG, "Ignore invalid ARP frame, length=" + frameData.length);
+                return;
+            }
+            if (this.arpTable == null) {
+                Log.w(TAG, "Ignore ARP frame because ARP table is not ready");
+                return;
+            }
             var arpReply = this.arpTable.processARPPacket(frameData);
             if (arpReply != null && arpReply.getDestMac() != 0 && arpReply.getDestAddress() != null) {
                 // 获取本地 V4 地址
@@ -444,6 +470,7 @@ public class TunTapAdapter implements VirtualNetworkFrameListener {
             // 收到 IPv4 包。根据需要发送至 TUN
             DebugLog.d(TAG, "Got IPv4 packet. Length: " + frameData.length + " Bytes");
             try {
+                recordRxBytes(frameData.length);
                 var sourceIP = IPPacketUtils.getSourceIP(frameData);
                 if (sourceIP != null) {
                     if (isIPv4Multicast(sourceIP)) {
@@ -463,6 +490,7 @@ public class TunTapAdapter implements VirtualNetworkFrameListener {
             // 收到 IPv6 包。根据需要发送至 TUN，并更新 NDP 表
             DebugLog.d(TAG, "Got IPv6 packet. Length: " + frameData.length + " Bytes");
             try {
+                recordRxBytes(frameData.length);
                 var sourceIP = IPPacketUtils.getSourceIP(frameData);
                 if (sourceIP != null) {
                     if (isIPv6Multicast(sourceIP)) {
@@ -505,5 +533,66 @@ public class TunTapAdapter implements VirtualNetworkFrameListener {
             }
             return 0;
         }
+    }
+
+    /**
+     * 获取并重置最近统计窗口的上下行流量
+     *
+     * @return [txBytes, rxBytes]
+     */
+    public long[] consumeTrafficStats() {
+        synchronized (this.trafficStatsLock) {
+            long[] snapshot = new long[]{this.txBytesInterval, this.rxBytesInterval};
+            this.txBytesInterval = 0;
+            this.rxBytesInterval = 0;
+            return snapshot;
+        }
+    }
+
+    private void recordTxBytes(int bytes) {
+        if (bytes <= 0) {
+            return;
+        }
+        synchronized (this.trafficStatsLock) {
+            this.txBytesInterval += bytes;
+        }
+    }
+
+    private void recordRxBytes(int bytes) {
+        if (bytes <= 0) {
+            return;
+        }
+        synchronized (this.trafficStatsLock) {
+            this.rxBytesInterval += bytes;
+        }
+    }
+
+    private void traceForwardingSample(InetAddress sourceIp,
+                                       InetAddress originalDestIp,
+                                       InetAddress forwardedDestIp,
+                                       Route matchedRoute,
+                                       InetAddress gateway,
+                                       ResultCode resultCode,
+                                       boolean viaArpRequest) {
+        long now = System.currentTimeMillis();
+        if (now - this.lastTraceSampleAtMs < TRACE_SAMPLE_INTERVAL_MS) {
+            return;
+        }
+        this.lastTraceSampleAtMs = now;
+        String sourceText = sourceIp == null ? "null" : sourceIp.getHostAddress();
+        String originalDestText = originalDestIp == null ? "null" : originalDestIp.getHostAddress();
+        String forwardedDestText = forwardedDestIp == null ? "null" : forwardedDestIp.getHostAddress();
+        String routeText = "null";
+        if (matchedRoute != null && matchedRoute.getAddress() != null) {
+            routeText = matchedRoute.getAddress().getHostAddress() + "/" + matchedRoute.getPrefix();
+        }
+        String gatewayText = gateway == null ? "null" : gateway.getHostAddress();
+        Log.i(TRACE, "TunTap.forward ipv4 src=" + sourceText
+                + ", dst=" + originalDestText
+                + ", forwardedDst=" + forwardedDestText
+                + ", route=" + routeText
+                + ", gateway=" + gatewayText
+                + ", viaArp=" + viaArpRequest
+                + ", result=" + resultCode);
     }
 }

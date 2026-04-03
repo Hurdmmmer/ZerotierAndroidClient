@@ -3,6 +3,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
@@ -29,6 +31,7 @@
         <activity
             android:name=".ui.NetworkListActivity"
             android:label="@string/app_name"
+            android:theme="@style/Theme.ZerotierFix.NoActionBar"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -38,19 +41,24 @@
         </activity>
         <activity
             android:name=".ui.JoinNetworkActivity"
-            android:label="@string/join_network" />
+            android:label="@string/join_network"
+            android:theme="@style/Theme.ZerotierFix.NoActionBar" />
         <activity
             android:name=".ui.PrefsActivity"
-            android:label="@string/app_name" />
+            android:label="@string/app_name"
+            android:theme="@style/Theme.ZerotierFix.NoActionBar" />
         <activity
             android:name=".ui.view.NetworkDetailActivity"
-            android:label="@string/network_detail" />
+            android:label="@string/network_detail"
+            android:theme="@style/Theme.ZerotierFix.NoActionBar" />
         <activity
             android:name=".ui.MoonOrbitActivity"
-            android:label="@string/moon_orbit_activity" />
+            android:label="@string/moon_orbit_activity"
+            android:theme="@style/Theme.ZerotierFix.NoActionBar" />
         <activity
             android:name=".ui.PeerListActivity"
-            android:label="@string/peer_list" />
+            android:label="@string/peer_list"
+            android:theme="@style/Theme.ZerotierFix.NoActionBar" />
 
         <receiver
             android:name=".service.StartupReceiver"

@@ -9,6 +9,9 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -129,10 +132,43 @@ public class PeerListFragment extends Fragment {
         this.swipeRefreshLayout = view.findViewById(R.id.swipe_refresh_peer);
         this.swipeRefreshLayout.setOnRefreshListener(this::onRefresh);
 
+        // 处理底部导航栏安全区，避免列表末尾被手势条遮挡
+        applyWindowInsets(view);
+
         // 更新入轨数据
         this.eventBus.post(new PeerInfoRequestEvent());
 
         return view;
+    }
+
+    /**
+     * 处理导航栏安全区：给列表和空态占位补齐底部间距。
+     */
+    private void applyWindowInsets(View root) {
+        if (this.recyclerView == null || this.emptyView == null) {
+            return;
+        }
+
+        final int recyclerPaddingBottom = this.recyclerView.getPaddingBottom();
+        final int emptyPaddingBottom = this.emptyView.getPaddingBottom();
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
+            this.recyclerView.setPadding(
+                    this.recyclerView.getPaddingLeft(),
+                    this.recyclerView.getPaddingTop(),
+                    this.recyclerView.getPaddingRight(),
+                    recyclerPaddingBottom + navInsets.bottom
+            );
+            this.emptyView.setPadding(
+                    this.emptyView.getPaddingLeft(),
+                    this.emptyView.getPaddingTop(),
+                    this.emptyView.getPaddingRight(),
+                    emptyPaddingBottom + navInsets.bottom
+            );
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
     }
 
     /**
@@ -193,16 +229,23 @@ public class PeerListFragment extends Fragment {
         public void onBindViewHolder(final RecyclerViewAdapter.ViewHolder holder, int position) {
             Peer peer = mValues.get(position);
             holder.mItem = peer;
+            // 主标识：节点地址（十六进制）
             holder.mAddress.setText(Long.toHexString(peer.getAddress()));
-            holder.mRole.setText(peerRoleToString(peer.getRole()));
+            // 次要信息：角色
+            holder.mRole.setText(getString(R.string.peer_role_inline, getString(peerRoleToString(peer.getRole()))));
             // 客户端版本
             String clientVersion = getString(R.string.unknown_version);
             if (peer.getVersionMajor() > 0) {
                 clientVersion = StringUtils.peerVersionString(peer);
             }
-            holder.mVersion.setText(clientVersion);
+            holder.mVersion.setText(getString(R.string.peer_version_inline, clientVersion));
             // 延迟
-            holder.mLatency.setText(String.format(getString(R.string.peer_lat), peer.getLatency()));
+            long latency = peer.getLatency();
+            if (latency < 0) {
+                holder.mLatency.setText(getString(R.string.peer_no_connection));
+            } else {
+                holder.mLatency.setText(String.format(getString(R.string.peer_lat), latency));
+            }
             // 当前路径
             PeerPhysicalPath preferred = null;
             if (peer.getPaths() != null) {
@@ -217,7 +260,8 @@ public class PeerListFragment extends Fragment {
             if (preferred != null) {
                 strPreferred = StringUtils.toString(preferred.getAddress());
             }
-            holder.mPath.setText(strPreferred);
+            // 路径信息放在卡片底部，便于快速判断是否走 relay
+            holder.mPath.setText(getString(R.string.peer_path_inline, strPreferred));
         }
 
         @Override

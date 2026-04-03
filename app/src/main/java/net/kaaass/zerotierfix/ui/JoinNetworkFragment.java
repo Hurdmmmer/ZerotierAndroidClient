@@ -14,6 +14,9 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager.widget.ViewPager;
 
@@ -206,7 +209,22 @@ public class JoinNetworkFragment extends Fragment implements CustomDNSListener {
                 }
             }
         });
+        // 处理导航栏安全区，避免底部按钮与系统手势条重叠
+        applyWindowInsets(inflate);
         return inflate;
+    }
+
+    /**
+     * 处理导航栏安全区：给页面根布局补齐底部间距。
+     */
+    private void applyWindowInsets(View root) {
+        final int paddingBottom = root.getPaddingBottom();
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
+            v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), paddingBottom + navInsets.bottom);
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
     }
 
     @Override // com.zerotier.one.ui.CustomDNSListener

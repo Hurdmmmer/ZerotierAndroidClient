@@ -11,7 +11,6 @@ import androidx.lifecycle.MutableLiveData;
 import com.zerotier.sdk.VirtualNetworkConfig;
 
 import net.kaaass.zerotierfix.ZerotierFixApplication;
-import net.kaaass.zerotierfix.events.DefaultRouteChangedEvent;
 import net.kaaass.zerotierfix.events.NetworkConfigChangedByUserEvent;
 import net.kaaass.zerotierfix.events.VirtualNetworkConfigChangedEvent;
 import net.kaaass.zerotierfix.events.VirtualNetworkConfigReplyEvent;
@@ -102,8 +101,13 @@ public class NetworkDetailModel extends AndroidViewModel {
         networkConfig.setRouteViaZeroTier(routeViaZeroTier);
         networkConfig.update();
 
-        // 触发事件
-        this.eventBus.post(new DefaultRouteChangedEvent(this.networkId, routeViaZeroTier));
+        // 通知服务重建隧道配置，使默认路由设置立即生效
+        var network = this.network.getValue();
+        if (network == null) {
+            Log.e(TAG, "Network not found!");
+            return;
+        }
+        this.eventBus.post(new NetworkConfigChangedByUserEvent(network));
     }
 
     /**

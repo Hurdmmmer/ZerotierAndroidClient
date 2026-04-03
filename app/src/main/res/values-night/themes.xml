@@ -2,18 +2,81 @@
     <!-- Base application theme. -->
     <style name="Theme.ZerotierFix" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
         <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/purple_200</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorPrimary">@color/ios_accent</item>
+        <item name="colorPrimaryVariant">@color/ios_accent_variant</item>
+        <item name="colorOnPrimary">@color/white</item>
         <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryVariant">@color/teal_200</item>
-        <item name="colorOnSecondary">@color/black</item>
+        <item name="colorSecondary">@color/ios_accent</item>
+        <item name="colorSecondaryVariant">@color/ios_accent_variant</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="colorSurface">@color/ios_surface</item>
+        <item name="colorOnSurface">@color/ios_text_primary</item>
         <!-- Status bar color. -->
-        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
+        <item name="android:statusBarColor" tools:targetApi="l">@color/ios_surface</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
+        <item name="android:windowBackground">@color/ios_background</item>
+        <item name="android:colorBackground">@color/ios_background</item>
         <!-- Customize your theme here. -->
-        <item name="greyText">@color/grey_text_night</item>
-        <item name="lightGreyText">@color/light_grey_text_night</item>
-        <item name="tableRowGrey">@color/table_row_grey_night</item>
+        <item name="greyText">@color/ios_text_primary</item>
+        <item name="lightGreyText">@color/ios_text_secondary</item>
+        <item name="tableRowGrey">@color/ios_separator</item>
+        <item name="disclosureIconColor">@color/ios_text_secondary</item>
+        <item name="actionIconColor">@color/ios_text_primary</item>
+        <item name="brandIconColor">@color/ios_accent</item>
+        <item name="brandIconContainerColor">@color/ios_brand_icon_container</item>
+        <item name="materialCardViewStyle">@style/Widget.ZerotierFix.CardView</item>
+        <item name="floatingActionButtonStyle">@style/Widget.ZerotierFix.Fab</item>
+        <item name="actionBarStyle">@style/Widget.ZerotierFix.ActionBar</item>
+        <item name="actionBarTheme">@style/ThemeOverlay.ZerotierFix.ActionBar</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.ZerotierFix.MaterialAlertDialog</item>
+        <item name="android:windowAnimationStyle">@style/Animation.ZerotierFix.Activity</item>
     </style>
+
+    <style name="Widget.ZerotierFix.CardView" parent="Widget.MaterialComponents.CardView">
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeColor">@color/ios_separator</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
+    <style name="Widget.ZerotierFix.Fab" parent="Widget.MaterialComponents.FloatingActionButton">
+        <item name="backgroundTint">@color/ios_accent</item>
+        <item name="tint">@android:color/white</item>
+        <item name="elevation">2dp</item>
+    </style>
+
+    <style name="Widget.ZerotierFix.ActionBar" parent="Widget.AppCompat.ActionBar">
+        <item name="background">@color/ios_surface</item>
+        <item name="android:background">@color/ios_surface</item>
+        <item name="elevation">0dp</item>
+        <item name="titleTextStyle">@style/TextAppearance.ZerotierFix.ActionBarTitle</item>
+    </style>
+
+    <style name="ThemeOverlay.ZerotierFix.ActionBar" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="colorControlNormal">@android:color/white</item>
+    </style>
+
+    <style name="TextAppearance.ZerotierFix.ActionBarTitle" parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <item name="android:textColor">@color/ios_text_primary</item>
+        <item name="textAllCaps">false</item>
+    </style>
+
+    <style name="ThemeOverlay.ZerotierFix.MaterialAlertDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.ZerotierFix.Dialog</item>
+        <item name="backgroundTint">@color/ios_surface</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.ZerotierFix.DialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.ZerotierFix.DialogButton</item>
+        <item name="android:windowAnimationStyle">@style/Animation.ZerotierFix.Dialog</item>
+    </style>
+
+    <style name="ShapeAppearanceOverlay.ZerotierFix.Dialog" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">20dp</item>
+    </style>
+
+    <style name="Widget.ZerotierFix.DialogButton" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/ios_accent</item>
+    </style>
+
+    <style name="Theme.ZerotierFix.PopupOverlay" parent="ThemeOverlay.MaterialComponents.Dark" />
 </resources>

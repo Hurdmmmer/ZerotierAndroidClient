@@ -43,6 +43,7 @@
     <string name="network_status_requesting_configuration">正在请求配置</string>
     <string name="network_status_unknown">未知</string>
     <string name="network_status_authentication_required">需要授权</string>
+    <string name="status_line_format">%1$s：%2$s</string>
     <string name="network_type">网络类型</string>
     <string name="network_type_label">网络类型:</string>
     <string name="network_type_private">私有</string>
@@ -52,6 +53,11 @@
     <string name="no_dns_text">将不会配置 DNS。</string>
     <string name="planet_settings">Planet 设置</string>
     <string name="preferences_general">通用设置</string>
+    <string name="preferences_theme_mode">主题模式</string>
+    <string name="preferences_theme_mode_summary">可选择跟随系统自动切换，或手动固定浅色/深色模式。</string>
+    <string name="theme_mode_system">跟随系统</string>
+    <string name="theme_mode_light">浅色</string>
+    <string name="theme_mode_dark">深色</string>
     <string name="preferences_general_start_on_boot">开机时启动 ZeroTier Fix</string>
     <string name="preferences_network">网络设置</string>
     <string name="preferences_network_auto_rejoin">打开时自动重新加入网络</string>
@@ -109,6 +115,7 @@
     <string name="use_custom_planet">启动自定义 Planet</string>
     <string name="load_planet_file">加载 Planet 文件</string>
     <string name="enter_planet_file_url">输入 Planet 文件的 URL:</string>
+    <string name="planet_url_hint">https://example.com/planet</string>
     <string name="file">文件</string>
     <string name="import_via_file">从文件导入</string>
     <string name="url">URL</string>
@@ -151,4 +158,50 @@
     <string name="dialog_no_notification_alert_title">未开启通知权限</string>
     <string name="open_notification_settings">打开通知设置</string>
     <string name="dont_show_again">不再提示</string>
+    <string name="preferences_general_start_on_boot_summary">开机自动启动 ZeroTier，并重连上次激活的网络。</string>
+    <string name="planet_auto_route_check">根据内网探测 IP 自动路由检测</string>
+    <string name="planet_auto_route_check_summary">开启后会先检测内网探测 IP；可达则跳过 ZeroTier 路由转发。</string>
+    <string name="planet_intranet_probe_ip">内网探测 IP</string>
+    <string name="planet_intranet_probe_ip_summary">可选。留空时不会启用自动路由转发检测。</string>
+    <string name="planet_probe_ip_help">填写一个局域网中应可达的地址，例如 192.168.1.1 或 10.0.0.1。</string>
+    <string name="planet_probe_ip_hint">例如：192.168.1.1</string>
+    <string name="planet_probe_ip_not_set">未设置（点按配置）</string>
+    <string name="invalid_probe_ip">IP 格式无效</string>
+    <string name="action_save">保存</string>
+    <string name="moon_seed_inline">种子 %1$s</string>
+    <string name="moon_config_inline">来源 %1$s</string>
+    <string name="unknown_version" translatable="false">-.-.-</string>
+    <string name="network_disconnected">已断开</string>
+    <string name="network_p2p_unknown">P2P：未知</string>
+    <string name="network_p2p_offline">P2P：未启用</string>
+    <string name="network_p2p_waiting">P2P：已启用</string>
+    <string name="network_intranet_yes">内网：是</string>
+    <string name="network_intranet_no">内网：否</string>
+    <string name="network_intranet_unknown">内网：--</string>
+    <string name="network_p2p_direct_only">P2P：直连节点（%1$d）</string>
+    <string name="network_p2p_relay_only">P2P：中继节点（%1$d）</string>
+    <string name="network_p2p_mixed">P2P：直连节点 %1$d · 中继节点 %2$d</string>
+    <string name="network_intranet_skip_hint">当前是内网环境，已跳过 ZeroTier 转发功能。</string>
+    <string name="peer_role_inline">类型 %1$s</string>
+    <string name="peer_version_inline">核心 %1$s</string>
+    <string name="peer_path_inline">路径 %1$s</string>
+    <string name="peer_lat" translatable="false">%d ms</string>
+    <string name="notification_primary_connected">已连接 · %1$s</string>
+    <string name="notification_secondary_connected">IP %1$s · %2$s · %3$s</string>
+    <string name="notification_expanded_connected">网络：%1$s（%2$s）\n节点 IP：%3$s\n延迟：%4$s\n速率：%5$s</string>
+    <string name="notification_action_disconnect">断开</string>
+    <string name="notification_action_reconnect">重连</string>
+    <string name="notification_action_open">打开</string>
+    <string name="notification_primary_connected_simple">已连接 · %1$s</string>
+    <string name="notification_secondary_connected_simple">速率 %1$s</string>
+    <string name="bottom_node_prefix">节点 %1$s</string>
+    <string name="bottom_node_placeholder">节点 -</string>
+    <string name="bottom_status_prefix">状态 %1$s</string>
+    <string name="bottom_status_offline">状态 OFFLINE</string>
+    <string name="bottom_core_prefix">核心 %1$s</string>
+    <string name="bottom_core_placeholder">核心 未获取</string>
+    <string name="bottom_app_prefix">应用 %1$s</string>
+    <string name="bottom_app_placeholder">应用 -.-.-</string>
 </resources>
+
+

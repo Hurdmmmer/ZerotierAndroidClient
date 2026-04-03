@@ -29,8 +29,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
         coreLibraryDesugaringEnabled true
     }
 
@@ -40,6 +40,11 @@ android {
             exclude module: 'commons-logging'
         }
     }
+
+    buildFeatures {
+        buildConfig true
+    }
+
     namespace 'net.kaaass.zerotierfix'
 }
 
@@ -65,6 +70,6 @@ dependencies {
     implementation 'commons-validator:commons-validator:1.7'
     implementation "androidx.multidex:multidex:2.0.1"
     //noinspection AnnotationProcessorOnCompilePath
-    compileOnly 'org.projectlombok:lombok:1.18.20'
-    annotationProcessor 'org.projectlombok:lombok:1.18.20'
+    compileOnly 'org.projectlombok:lombok:1.18.36'
+    annotationProcessor 'org.projectlombok:lombok:1.18.36'
 }

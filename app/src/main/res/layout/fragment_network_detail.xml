@@ -1,263 +1,323 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:background="?android:colorBackground"
+    android:clipToPadding="false"
+    android:padding="@dimen/space_md">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:orientation="horizontal">
+        android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/network_detail_network_id"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:paddingLeft="4dp"
-            android:paddingRight="4dp"
-            android:text="@string/network_id"
-            android:textColor="?attr/greyText"
-            android:textStyle="bold" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <TextView
-            android:id="@+id/network_detail_network_name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingLeft="4dp"
-            android:paddingTop="4dp"
-            android:paddingRight="4dp"
-            android:text="@string/network_name"
-            android:textColor="?attr/greyText" />
-    </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@android:color/darker_gray" />
-
-    <TableLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:columnCount="2"
-        android:gravity="end"
-        android:orientation="horizontal"
-        android:stretchColumns="1">
-
-        <TableRow android:layout_width="match_parent">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:paddingLeft="40dp"
-                android:paddingRight="20dp"
-                android:text="@string/network_status" />
-
-            <TextView
-                android:id="@+id/network_status_textview"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:text="@string/network_status_not_connected" />
-        </TableRow>
-
-        <TableRow android:layout_width="match_parent">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:paddingLeft="40dp"
-                android:paddingRight="20dp"
-                android:text="@string/network_type" />
-
-            <TextView
-                android:id="@+id/network_type_textview"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:text="" />
-        </TableRow>
-
-        <TableRow android:layout_width="match_parent">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:paddingLeft="40dp"
-                android:paddingRight="20dp"
-                android:text="@string/network_mac" />
-
-            <TextView
-                android:id="@+id/network_mac_textview"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:text="" />
-        </TableRow>
-
-        <TableRow android:layout_width="match_parent">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:paddingLeft="40dp"
-                android:paddingRight="20dp"
-                android:text="@string/network_mtu" />
-
-            <TextView
-                android:id="@+id/network_mtu_textview"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:text="" />
-        </TableRow>
-
-        <TableRow android:layout_width="match_parent">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:paddingLeft="40dp"
-                android:paddingRight="20dp"
-                android:text="@string/network_broadcast" />
-
-            <TextView
-                android:id="@+id/network_broadcast_textview"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:text="" />
-        </TableRow>
-
-        <TableRow android:layout_width="match_parent">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:paddingLeft="40dp"
-                android:paddingRight="20dp"
-                android:text="@string/network_bridging" />
-
-            <TextView
-                android:id="@+id/network_bridging_textview"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:text="" />
-        </TableRow>
-
-        <TableRow android:layout_width="match_parent">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:paddingLeft="40dp"
-                android:paddingRight="20dp"
-                android:text="@string/network_dns_mode" />
-
-            <TextView
-                android:id="@+id/network_dns_mode_textview"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:text="" />
-        </TableRow>
-
-        <TableRow android:layout_width="match_parent">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="right|center_vertical|center_horizontal|center|end"
-                android:paddingLeft="40dp"
-                android:paddingRight="20dp"
-                android:text="@string/network_default_route" />
-
-            <CheckBox
-                android:id="@+id/network_default_route"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:text="" />
-        </TableRow>
-
-        <TableRow
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:background="?attr/tableRowGrey">
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="@dimen/radius_md"
+            app:cardElevation="0dp"
+            app:contentPadding="@dimen/card_padding"
+            app:strokeColor="?attr/tableRowGrey"
+            app:strokeWidth="@dimen/card_stroke">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:layout_marginTop="5dp"
-                android:layout_marginBottom="5dp"
-                android:layout_span="2"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/network_detail_network_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/network_name"
+                    android:textColor="?attr/greyText"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/network_detail_network_id"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="monospace"
+                    android:text="@string/network_id"
+                    android:textColor="?attr/greyText"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            app:cardCornerRadius="@dimen/radius_md"
+            app:cardElevation="0dp"
+            app:contentPadding="@dimen/card_padding"
+            app:strokeColor="?attr/tableRowGrey"
+            app:strokeWidth="@dimen/card_stroke">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/network_status"
+                        android:textColor="?attr/greyText"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/network_status_textview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/network_status_not_connected"
+                        android:textColor="?attr/greyText" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_sm"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/network_type"
+                        android:textColor="?attr/greyText"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/network_type_textview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="?attr/greyText" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_sm"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/network_mac"
+                        android:textColor="?attr/greyText"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/network_mac_textview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="?attr/greyText" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_sm"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/network_mtu"
+                        android:textColor="?attr/greyText"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/network_mtu_textview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="?attr/greyText" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_sm"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/network_broadcast"
+                        android:textColor="?attr/greyText"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/network_broadcast_textview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="?attr/greyText" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_sm"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/network_bridging"
+                        android:textColor="?attr/greyText"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/network_bridging_textview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="?attr/greyText" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            app:cardCornerRadius="@dimen/radius_md"
+            app:cardElevation="0dp"
+            app:contentPadding="@dimen/card_padding"
+            app:strokeColor="?attr/tableRowGrey"
+            app:strokeWidth="@dimen/card_stroke">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/network_dns_mode"
+                        android:textColor="?attr/greyText"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/network_dns_mode_textview"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="?attr/greyText" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_md"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/network_default_route"
+                        android:textColor="?attr/greyText"
+                        android:textStyle="bold" />
+
+                    <CheckBox
+                        android:id="@+id/network_default_route"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            app:cardCornerRadius="@dimen/radius_md"
+            app:cardElevation="0dp"
+            app:contentPadding="@dimen/card_padding"
+            app:strokeColor="?attr/tableRowGrey"
+            app:strokeWidth="@dimen/card_stroke">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="vertical">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_margin="5dp"
-                    android:gravity="end"
                     android:text="@string/network_ips"
+                    android:textColor="?attr/greyText"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/network_ipaddresses_textview"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:gravity="end"
-                    android:text="" />
+                    android:layout_marginTop="@dimen/space_sm"
+                    android:fontFamily="monospace"
+                    android:textColor="?attr/greyText" />
             </LinearLayout>
-        </TableRow>
+        </com.google.android.material.card.MaterialCardView>
 
-        <TableRow
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/custom_dns_row"
             android:layout_width="match_parent"
-            android:background="?attr/tableRowGrey">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            app:cardCornerRadius="@dimen/radius_md"
+            app:cardElevation="0dp"
+            app:contentPadding="@dimen/card_padding"
+            app:strokeColor="?attr/tableRowGrey"
+            app:strokeWidth="@dimen/card_stroke">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:layout_marginTop="5dp"
-                android:layout_marginBottom="5dp"
-                android:layout_span="2"
                 android:orientation="vertical">
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_margin="5dp"
-                    android:gravity="end"
                     android:text="@string/custom_dns"
+                    android:textColor="?attr/greyText"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/network_dns_textview"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_margin="5dp"
-                    android:gravity="end"
-                    android:text="" />
+                    android:layout_marginTop="@dimen/space_sm"
+                    android:fontFamily="monospace"
+                    android:textColor="?attr/greyText" />
             </LinearLayout>
-        </TableRow>
-    </TableLayout>
-</LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+</ScrollView>
+
+
+

@@ -4,12 +4,13 @@ plugins {
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
+    namespace 'com.zerotier.sdk'
+    // 固定 NDK 版本，避免不同机器自动选到不兼容版本
+    ndkVersion '27.0.12077973'
 
     defaultConfig {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -21,19 +22,27 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     externalNativeBuild {
         cmake {
-            path file('../externals/core/java/CMakeLists.txt')
+            // 升级完成后切回正式子模块路径
+            path file('../externals/core-upstream/java/CMakeLists.txt')
             version '3.22.1'
         }
     }
 
     buildFeatures {
         viewBinding true
+    }
+
+    sourceSets {
+        main {
+            // Java JNI 包路径使用正式子模块目录
+            java.srcDirs = ['../externals/core-upstream/java/src']
+        }
     }
 }
 

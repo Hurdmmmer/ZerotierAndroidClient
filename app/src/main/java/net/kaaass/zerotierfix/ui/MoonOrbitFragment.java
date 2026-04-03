@@ -19,11 +19,13 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
 
@@ -121,14 +123,54 @@ public class MoonOrbitFragment extends Fragment {
         this.recyclerViewAdapter.registerAdapterDataObserver(checkIfEmptyObserver);
         recyclerView.setAdapter(this.recyclerViewAdapter);
 
-        // 设置添加按钮
-        FloatingActionButton fab = view.findViewById(R.id.fab_moon_orbit);
-        fab.setOnClickListener(parentView -> showMoonProviderDialog());
+        // 处理导航栏安全区，避免列表末项被系统手势条遮挡
+        applyWindowInsets(view);
 
         // 更新入轨数据
         updateOrbitList();
 
         return view;
+    }
+
+    /**
+     * 处理导航栏安全区：补齐列表和空态的底部间距。
+     */
+    private void applyWindowInsets(View root) {
+        if (this.recyclerView == null || this.emptyView == null) {
+            return;
+        }
+
+        final int recyclerPaddingBottom = this.recyclerView.getPaddingBottom();
+        final int emptyPaddingBottom = this.emptyView.getPaddingBottom();
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
+
+            this.recyclerView.setPadding(
+                    this.recyclerView.getPaddingLeft(),
+                    this.recyclerView.getPaddingTop(),
+                    this.recyclerView.getPaddingRight(),
+                    recyclerPaddingBottom + navInsets.bottom
+            );
+            this.emptyView.setPadding(
+                    this.emptyView.getPaddingLeft(),
+                    this.emptyView.getPaddingTop(),
+                    this.emptyView.getPaddingRight(),
+                    emptyPaddingBottom + navInsets.bottom
+            );
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
+    }
+
+    /**
+     * 供 Activity 顶部栏按钮调用：打开添加 Moon 的入口面板。
+     */
+    public void showAddMoonEntry() {
+        if (!isAdded()) {
+            return;
+        }
+        showMoonProviderDialog();
     }
 
     @Override
@@ -394,13 +436,16 @@ public class MoonOrbitFragment extends Fragment {
             // 设置文本
             holder.mMoonWorldId.setText(Long.toHexString(moonOrbit.getMoonWorldId()));
             if (moonOrbit.getFromFile()) {
-                holder.mMoonConfig.setText(R.string.external_file);
+                // 文件导入场景没有 seed，统一显示为 “-”
+                holder.mMoonConfig.setText(getString(R.string.moon_config_inline, getString(R.string.external_file)));
+                holder.mMoonSeed.setText(getString(R.string.moon_seed_inline, "-"));
             } else {
-                holder.mMoonSeed.setText(Long.toHexString(moonOrbit.getMoonSeed()));
+                // 手动入轨场景显示 seed 和缓存状态
+                holder.mMoonSeed.setText(getString(R.string.moon_seed_inline, Long.toHexString(moonOrbit.getMoonSeed())));
                 if (moonOrbit.isCacheFile()) {
-                    holder.mMoonConfig.setText(R.string.cached);
+                    holder.mMoonConfig.setText(getString(R.string.moon_config_inline, getString(R.string.cached)));
                 } else {
-                    holder.mMoonConfig.setText(R.string.wait_to_fetch);
+                    holder.mMoonConfig.setText(getString(R.string.moon_config_inline, getString(R.string.wait_to_fetch)));
                 }
             }
             // 长按菜单
@@ -455,7 +500,7 @@ public class MoonOrbitFragment extends Fragment {
                     } else if (menuItem.getItemId() == R.id.menu_item_delete_moon_orbit_cache) {
                         // 删除缓存文件
                         this.mItem.deleteCacheFile(requireContext());
-                        this.mMoonConfig.setText(R.string.wait_to_fetch);
+                        this.mMoonConfig.setText(getString(R.string.moon_config_inline, getString(R.string.wait_to_fetch)));
                         Snackbar.make(requireView(), R.string.cached_moon_file_delete, BaseTransientBottomBar.LENGTH_SHORT).show();
                         return true;
                     }

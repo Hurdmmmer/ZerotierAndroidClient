@@ -10,18 +10,36 @@
 
     <color name="tooltip_background_dark">#e6616161</color>
     <color name="tooltip_background_light">#e6ffffff</color>
-    <color name="primary_green">#234447</color>
+    <color name="primary_green">#0B57D0</color>
 
-    <color name="grey_text">#555555</color>
+    <!-- Apple-like palette -->
+    <color name="ios_background">#F7F9FC</color>
+    <color name="ios_surface">#FFFFFF</color>
+    <color name="ios_text_primary">#1B1C1F</color>
+    <color name="ios_text_secondary">#5F6368</color>
+    <color name="ios_separator">#DDE3EA</color>
+    <color name="ios_accent">#0B57D0</color>
+    <color name="ios_accent_variant">#1A73E8</color>
+    <color name="ios_brand_icon_container">#E7F0FE</color>
+
+    <color name="grey_text">#1C1C1E</color>
     <color name="grey_text_night">#EDEDED</color>
 
-    <color name="light_grey_text">#dddddd</color>
+    <color name="light_grey_text">#6E6E73</color>
     <color name="light_grey_text_night">#ffffff</color>
 
-    <color name="table_row_grey">#dddddd</color>
+    <color name="table_row_grey">#E5E5EA</color>
     <color name="table_row_grey_night">#555555</color>
 
     <color name="logo_bkg">#FAC073</color>
 
     <color name="zerotier_orange">#fac073</color>
+
+    <!-- Network status colors -->
+    <color name="status_ok">#15803D</color>
+    <color name="status_progress">#2563EB</color>
+    <color name="status_error">#DC2626</color>
+    <color name="status_warning">#B45309</color>
+    <color name="status_neutral">#6B7280</color>
+    <color name="status_text_primary">#374151</color>
 </resources>

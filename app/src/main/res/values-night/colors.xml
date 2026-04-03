@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary_green">#8AB4F8</color>
+
+    <!-- Android contrast with iOS-like hierarchy -->
+    <color name="ios_background">#111318</color>
+    <color name="ios_surface">#1B1F24</color>
+    <color name="ios_text_primary">#E3E7EF</color>
+    <color name="ios_text_secondary">#B9C0CC</color>
+    <color name="ios_separator">#2E333B</color>
+    <color name="ios_accent">#8AB4F8</color>
+    <color name="ios_accent_variant">#A8C7FA</color>
+    <color name="ios_brand_icon_container">#213249</color>
+
+    <color name="grey_text">#E3E7EF</color>
+    <color name="grey_text_night">#E3E7EF</color>
+    <color name="light_grey_text">#B9C0CC</color>
+    <color name="light_grey_text_night">#B9C0CC</color>
+    <color name="table_row_grey">#2E333B</color>
+    <color name="table_row_grey_night">#2E333B</color>
+</resources>

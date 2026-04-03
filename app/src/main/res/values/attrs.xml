@@ -3,4 +3,8 @@
     <attr name="greyText" format="color" />
     <attr name="lightGreyText" format="color" />
     <attr name="tableRowGrey" format="color" />
+    <attr name="disclosureIconColor" format="color" />
+    <attr name="actionIconColor" format="color" />
+    <attr name="brandIconColor" format="color" />
+    <attr name="brandIconContainerColor" format="color" />
 </resources>

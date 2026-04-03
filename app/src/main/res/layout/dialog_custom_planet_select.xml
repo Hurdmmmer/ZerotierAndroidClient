@@ -1,102 +1,157 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="?attr/colorSurface"
+    android:padding="@dimen/space_md">
 
-    <LinearLayout
+    <TextView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="wrap_content"
+        android:text="@string/load_planet_file"
+        android:textColor="?attr/greyText"
+        android:textSize="16sp"
+        android:textStyle="bold" />
 
-        <Space
-            android:layout_width="match_parent"
-            android:layout_height="10dp" />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_xs"
+        android:text="@string/load_planet_summary"
+        android:textColor="?attr/lightGreyText"
+        android:textSize="12sp" />
 
-        <RelativeLayout
-            android:id="@+id/from_file"
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/from_file"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="56dp"
+        android:layout_marginTop="@dimen/space_md"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        app:cardCornerRadius="@dimen/radius_md"
+        app:cardElevation="0dp"
+        app:contentPadding="@dimen/card_padding"
+        app:strokeColor="?attr/tableRowGrey"
+        app:strokeWidth="@dimen/card_stroke">
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-            <ImageView
-                android:id="@+id/icon_file"
-                android:layout_width="25dp"
-                android:layout_height="25dp"
-                android:layout_centerVertical="true"
-                android:layout_marginStart="22.5dp"
-                app:srcCompat="@drawable/baseline_description_24" />
+            <FrameLayout
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/bg_brand_icon_container">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:tint="?attr/brandIconColor"
+                    app:srcCompat="@drawable/ic_file_24" />
+            </FrameLayout>
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_marginStart="24.5dp"
-                android:layout_toEndOf="@+id/icon_file"
-                android:orientation="vertical"
-                android:paddingTop="15dp"
-                android:paddingBottom="15dp">
+                android:layout_marginStart="@dimen/space_md"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/file"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textSize="16sp" />
+                    android:textColor="?attr/greyText"
+                    android:textSize="15sp" />
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="@string/import_via_file" />
+                    android:layout_marginTop="@dimen/space_xs"
+                    android:text="@string/import_via_file"
+                    android:textColor="?attr/lightGreyText"
+                    android:textSize="12sp" />
             </LinearLayout>
-        </RelativeLayout>
-
-        <RelativeLayout
-            android:id="@+id/from_url"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground">
 
             <ImageView
-                android:id="@+id/icon_url"
-                android:layout_width="25dp"
-                android:layout_height="25dp"
-                android:layout_centerVertical="true"
-                android:layout_marginStart="22.5dp"
-                app:srcCompat="@drawable/baseline_link_24" />
-
-            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_marginStart="24.5dp"
-                android:layout_toEndOf="@+id/icon_url"
-                android:orientation="vertical"
-                android:paddingTop="15dp"
-                android:paddingBottom="15dp">
+                android:contentDescription="@null"
+                android:tint="?attr/disclosureIconColor"
+                app:srcCompat="@drawable/ic_chevron_right_20" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/from_url"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="56dp"
+        android:layout_marginTop="@dimen/space_sm"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        app:cardCornerRadius="@dimen/radius_md"
+        app:cardElevation="0dp"
+        app:contentPadding="@dimen/card_padding"
+        app:strokeColor="?attr/tableRowGrey"
+        app:strokeWidth="@dimen/card_stroke">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <FrameLayout
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/bg_brand_icon_container">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:tint="?attr/brandIconColor"
+                    app:srcCompat="@drawable/ic_link_24" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_md"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/url"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textSize="16sp" />
+                    android:textColor="?attr/greyText"
+                    android:textSize="15sp" />
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="@string/import_via_url" />
+                    android:layout_marginTop="@dimen/space_xs"
+                    android:text="@string/import_via_url"
+                    android:textColor="?attr/lightGreyText"
+                    android:textSize="12sp" />
             </LinearLayout>
-        </RelativeLayout>
 
-        <Space
-            android:layout_width="match_parent"
-            android:layout_height="10dp" />
-    </LinearLayout>
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@null"
+                android:tint="?attr/disclosureIconColor"
+                app:srcCompat="@drawable/ic_chevron_right_20" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</LinearLayout>
